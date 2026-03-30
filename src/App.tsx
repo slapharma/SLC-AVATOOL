@@ -39,7 +39,14 @@ function App() {
       {/* Profile setup modal overlay */}
       {showSetup && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Onboarding onComplete={handleProfileComplete} />
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowSetup(false)}
+              style={{ position: 'absolute', top: 16, right: 16, zIndex: 10, background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, lineHeight: 1, color: 'var(--text-dim)', padding: 4 }}
+              aria-label="Close"
+            >✕</button>
+            <Onboarding onComplete={handleProfileComplete} />
+          </div>
         </div>
       )}
 
