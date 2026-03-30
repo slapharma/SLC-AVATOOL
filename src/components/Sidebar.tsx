@@ -3,7 +3,7 @@ import type { AppView, CreatorProfile } from '../App'
 type Props = {
   view: AppView
   setView: (v: AppView) => void
-  profile: CreatorProfile
+  profile: CreatorProfile | null
   onReset: () => void
   onKeys: () => void
 }
@@ -37,12 +37,20 @@ export function Sidebar({ view, setView, profile, onReset, onKeys }: Props) {
       </div>
 
       <div className="sidebar-profile">
-        <div className="profile-niche">{profile.niche}</div>
-        <div className="profile-name">{profile.name}</div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button className="reset-btn" onClick={onKeys}>⚙ API Keys</button>
-          <button className="reset-btn" onClick={onReset}>Edit profile</button>
-        </div>
+        {profile ? (
+          <>
+            <div className="profile-niche">{profile.niche}</div>
+            <div className="profile-name">{profile.name}</div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button className="reset-btn" onClick={onKeys}>⚙ API Keys</button>
+              <button className="reset-btn" onClick={onReset}>Edit profile</button>
+            </div>
+          </>
+        ) : (
+          <button className="reset-btn" onClick={onReset} style={{ fontWeight: 600, color: 'var(--gold)' }}>
+            + Setup Profile
+          </button>
+        )}
       </div>
     </nav>
   )
