@@ -1,8 +1,16 @@
 import { useState } from 'react'
 import type { CreatorProfile } from '../App'
+import type { StoredProfile } from '../lib/profiles'
 import { streamText } from '../lib/ai'
+import { InfoTip } from './InfoTip'
+import { ProfileSelector } from './ProfileSelector'
 
-type Props = { profile: CreatorProfile }
+type Props = {
+  profile: CreatorProfile
+  profiles?: StoredProfile[]
+  activeProfileId?: string
+  onProfileSwitch?: (id: string) => void
+}
 
 const STRUCTURES = [
   { id: 'tutorial',    label: 'How To / Tutorial',      icon: '📋' },
@@ -27,7 +35,7 @@ const HOOK_TYPES = [
 
 const CTA_GOALS = ['Grow followers', 'Drive engagement', 'Generate leads', 'Save/share viral']
 
-export function ScriptGenerator({ profile }: Props) {
+export function ScriptGenerator({ profile, profiles = [], activeProfileId = '', onProfileSwitch }: Props) {
   const [structure, setStructure]   = useState('tutorial')
   const [pillar, setPillar]         = useState('educate')
   const [hookType, setHookType]     = useState('Curiosity Gap')
@@ -111,11 +119,16 @@ Write an Instagram caption for a ${pillar} post on: "${topic}"
       <div className="page-title">Script Generator</div>
       <div className="page-sub">AI-powered content creation using Ava's proven frameworks</div>
 
+      <ProfileSelector profiles={profiles} activeId={activeProfileId} onSwitch={onProfileSwitch || (() => {})} />
+
       <div className="gen-layout">
         {/* Controls */}
         <div className="gen-controls">
           <div style={{ marginBottom: 20 }}>
-            <div className="form-label">Generate</div>
+            <div className="form-label">
+              Generate
+              <InfoTip text="Choose what to create: a full video script with hook, body and CTA; 10 scroll-stopping hook variations for A/B testing; or a formatted Instagram caption." />
+            </div>
             <div style={{ display: 'flex', gap: 8 }}>
               {(['script', 'hooks', 'caption'] as const).map(m => (
                 <button key={m} className={`chip ${mode === m ? 'active' : ''}`}
@@ -127,7 +140,10 @@ Write an Instagram caption for a ${pillar} post on: "${topic}"
           </div>
 
           <div className="form-group">
-            <label className="form-label">Topic / Angle</label>
+            <label className="form-label">
+              Topic / Angle
+              <InfoTip text="The specific subject or angle for your content. Specificity beats generality — 'How pharma founders close licensing deals faster' outperforms 'pharma tips' every time." />
+            </label>
             <input className="form-input" placeholder={`e.g. ${profile.niche} mistake most people make`}
               value={topic} onChange={e => setTopic(e.target.value)} />
           </div>
@@ -135,7 +151,10 @@ Write an Instagram caption for a ${pillar} post on: "${topic}"
           {mode === 'script' && (
             <>
               <div style={{ marginBottom: 20 }}>
-                <div className="form-label">Script Structure</div>
+                <div className="form-label">
+                  Script Structure
+                  <InfoTip text="The narrative framework. How To walks viewers through steps. Storytime uses narrative tension. Contrarian challenges a common belief to stop the scroll. Listicle signals quick, digestible value." />
+                </div>
                 {STRUCTURES.map(s => (
                   <button key={s.id} className={`chip ${structure === s.id ? 'active' : ''}`}
                     onClick={() => setStructure(s.id)}
@@ -145,7 +164,10 @@ Write an Instagram caption for a ${pillar} post on: "${topic}"
                 ))}
               </div>
               <div style={{ marginBottom: 20 }}>
-                <div className="form-label">Content Pillar</div>
+                <div className="form-label">
+                  Content Pillar
+                  <InfoTip text="The purpose of this piece. Ava's 70/30 rule: 70% Educate + Entertain builds the audience who trusts you. 30% Sell converts that trust into revenue. Selling too early kills growth." />
+                </div>
                 <div className="chip-group">
                   {PILLARS.map(p => (
                     <button key={p.id} className={`chip ${pillar === p.id ? 'active' : ''}`}
@@ -154,7 +176,10 @@ Write an Instagram caption for a ${pillar} post on: "${topic}"
                 </div>
               </div>
               <div style={{ marginBottom: 20 }}>
-                <div className="form-label">Hook Archetype</div>
+                <div className="form-label">
+                  Hook Archetype
+                  <InfoTip text="The psychological trigger your opening line uses. Curiosity Gap withholds information to force a watch. Bold Claim stakes a provocative position. Direct Call-Out speaks to one specific person and makes them feel seen." />
+                </div>
                 <div className="chip-group">
                   {HOOK_TYPES.map(h => (
                     <button key={h} className={`chip ${hookType === h ? 'active' : ''}`}
@@ -163,7 +188,10 @@ Write an Instagram caption for a ${pillar} post on: "${topic}"
                 </div>
               </div>
               <div style={{ marginBottom: 20 }}>
-                <div className="form-label">CTA Goal</div>
+                <div className="form-label">
+                  CTA Goal
+                  <InfoTip text="What you want viewers to do. Match this to your growth phase: Followers first (0–1K), then Engagement (1K–10K), then Leads (10K+). One CTA per video — never split the audience's attention." />
+                </div>
                 <div className="chip-group">
                   {CTA_GOALS.map(c => (
                     <button key={c} className={`chip ${ctaGoal === c ? 'active' : ''}`}

@@ -1,7 +1,15 @@
 import { useState } from 'react'
 import type { CreatorProfile } from '../App'
+import type { StoredProfile } from '../lib/profiles'
+import { InfoTip } from './InfoTip'
+import { ProfileSelector } from './ProfileSelector'
 
-type Props = { profile: CreatorProfile }
+type Props = {
+  profile: CreatorProfile
+  profiles?: StoredProfile[]
+  activeProfileId?: string
+  onProfileSwitch?: (id: string) => void
+}
 
 type VideoMode = 'text-to-video' | 'image-to-video'
 type AspectRatio = '9:16' | '16:9' | '1:1'
@@ -92,7 +100,7 @@ Return ONLY the prompt. No preamble. Focus on visual description, camera movemen
   return data.choices?.[0]?.message?.content?.trim() || topic
 }
 
-export function VideoGenerator({ profile }: Props) {
+export function VideoGenerator({ profile, profiles = [], activeProfileId = '', onProfileSwitch }: Props) {
   const [mode, setMode]               = useState<VideoMode>('text-to-video')
   const [contentType, setContentType] = useState('hook')
   const [topic, setTopic]             = useState('')
@@ -108,8 +116,8 @@ export function VideoGenerator({ profile }: Props) {
   const [error, setError]             = useState('')
   const [gallery, setGallery]         = useState<{ url: string; prompt: string }[]>([])
 
-  const falKey      = localStorage.getItem('sre_fal_key') || ''
-  const orKey       = localStorage.getItem('sre_or_key') || ''
+  const falKey = localStorage.getItem('sre_fal_key') || ''
+  const orKey  = localStorage.getItem('sre_or_key') || ''
 
   const generate = async () => {
     if (!falKey) { setError('FAL.ai API key required. Click ⚙ API Keys to add it.'); return }
@@ -173,9 +181,11 @@ export function VideoGenerator({ profile }: Props) {
           display: 'flex', alignItems: 'center', gap: 12,
         }}>
           <span>⚠</span>
-          <span>FAL.ai API key not set. <strong>Click ⚙ API Keys</strong> in the sidebar to add it. Video generation requires FAL.ai — OpenRouter doesn't support video output yet.</span>
+          <span>FAL.ai API key not set. <strong>Click ⚙ API Keys</strong> in the sidebar to add it.</span>
         </div>
       )}
+
+      <ProfileSelector profiles={profiles} activeId={activeProfileId} onSwitch={onProfileSwitch || (() => {})} />
 
       <div className="gen-layout" style={{ gridTemplateColumns: '300px 1fr' }}>
         {/* Controls */}
@@ -183,7 +193,10 @@ export function VideoGenerator({ profile }: Props) {
 
           {/* Mode */}
           <div style={{ marginBottom: 18 }}>
-            <div className="form-label">Mode</div>
+            <div className="form-label">
+              Mode
+              <InfoTip text="Text → Video creates a clip from a description alone. Image → Video animates a still image you provide — great for bringing your Image Generator outputs to life with camera motion." />
+            </div>
             <div style={{ display: 'flex', gap: 8 }}>
               {(['text-to-video', 'image-to-video'] as const).map(m => (
                 <button key={m} className={`chip ${mode === m ? 'active' : ''}`}
@@ -196,7 +209,10 @@ export function VideoGenerator({ profile }: Props) {
 
           {/* Content type */}
           <div style={{ marginBottom: 18 }}>
-            <div className="form-label">Content Type</div>
+            <div className="form-label">
+              Content Type
+              <InfoTip text="The purpose of the clip. Reel Hook is a 3–5s pattern interrupt for your opening. Lifestyle Clip is aspirational b-roll. Product Demo shows your offer in action. Transition is a before/after reveal — high-engagement format." />
+            </div>
             {CONTENT_TYPES.map(ct => (
               <div key={ct.id}
                 onClick={() => setContentType(ct.id)}
@@ -228,7 +244,10 @@ export function VideoGenerator({ profile }: Props) {
             </div>
           ) : (
             <div className="form-group" style={{ marginBottom: 18 }}>
-              <label className="form-label">Topic / Subject</label>
+              <label className="form-label">
+                Topic / Subject
+                <InfoTip text="Brief description of what should happen in the video. DeepSeek V3 (free) crafts the detailed visual prompt — just describe the subject and story. The more specific, the better the result." />
+              </label>
               <input className="form-input"
                 placeholder={`e.g. ${profile.niche} insight`}
                 value={topic} onChange={e => setTopic(e.target.value)} />
@@ -243,19 +262,22 @@ export function VideoGenerator({ profile }: Props) {
           {/* Image URL for image-to-video */}
           {mode === 'image-to-video' && (
             <div className="form-group" style={{ marginBottom: 18 }}>
-              <label className="form-label">Source Image URL</label>
+              <label className="form-label">
+                Source Image URL
+                <InfoTip text="A publicly accessible image URL to animate. Use an image generated in the Image Generator (right-click → copy image address) or any public URL. The AI will add realistic camera motion and life to the still." />
+              </label>
               <input className="form-input" placeholder="https://..."
                 value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
-              <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 5 }}>
-                Use an image generated in the Image Generator, or any public URL
-              </div>
             </div>
           )}
 
           {/* Visual style */}
           {contentType !== 'custom' && (
             <div style={{ marginBottom: 18 }}>
-              <div className="form-label">Visual Style</div>
+              <div className="form-label">
+                Visual Style
+                <InfoTip text="The cinematographic look and feel. Cinematic = premium, aspirational brand. Documentary = authentic, relatable content. Corporate = professional B2B. High Energy = fast-paced social-first editing." />
+              </div>
               {STYLE_PRESETS.map(s => (
                 <button key={s} className={`chip ${style === s ? 'active' : ''}`}
                   onClick={() => setStyle(s)}
@@ -268,7 +290,10 @@ export function VideoGenerator({ profile }: Props) {
 
           {/* Aspect ratio */}
           <div style={{ marginBottom: 18 }}>
-            <div className="form-label">Aspect Ratio</div>
+            <div className="form-label">
+              Aspect Ratio
+              <InfoTip text="9:16 is mandatory for Reels and TikTok — always use this for social-first content. 16:9 for YouTube. 1:1 for LinkedIn or Twitter feed posts." />
+            </div>
             <div style={{ display: 'flex', gap: 8 }}>
               {([['9:16', 'Reels'], ['16:9', 'YouTube'], ['1:1', 'Square']] as const).map(([ar, lbl]) => (
                 <button key={ar} className={`chip ${aspect === ar ? 'active' : ''}`}
@@ -283,7 +308,10 @@ export function VideoGenerator({ profile }: Props) {
 
           {/* Duration */}
           <div style={{ marginBottom: 20 }}>
-            <div className="form-label">Duration</div>
+            <div className="form-label">
+              Duration
+              <InfoTip text="5s is best for hooks and pattern interrupts — the algorithm rewards short, high-completion clips. 10s for fuller demos or lifestyle b-roll. Longer clips cost more and need higher production quality to retain viewers." />
+            </div>
             <div style={{ display: 'flex', gap: 8 }}>
               {([['5', '$0.15'], ['10', '$0.29']] as const).map(([d, cost]) => (
                 <button key={d} className={`chip ${duration === d ? 'active' : ''}`}

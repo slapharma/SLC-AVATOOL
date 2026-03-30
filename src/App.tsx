@@ -8,6 +8,9 @@ import { ImageGenerator } from './components/ImageGenerator'
 import { VideoGenerator } from './components/VideoGenerator'
 import { Sidebar } from './components/Sidebar'
 import { ApiKeySetup } from './components/ApiKeySetup'
+import { ProfilePage } from './components/ProfilePage'
+import { loadProfiles, saveProfiles, loadActiveId, saveActiveId, makeProfile } from './lib/profiles'
+import type { StoredProfile } from './lib/profiles'
 
 export type CreatorProfile = {
   name: string
@@ -20,23 +23,50 @@ export type CreatorProfile = {
   currentFollowers: string
 }
 
-export type AppView = 'dashboard' | 'scripts' | 'calendar' | 'funnel' | 'images' | 'video'
+export type { StoredProfile }
+export type AppView = 'dashboard' | 'scripts' | 'calendar' | 'funnel' | 'images' | 'video' | 'profile'
 
 function App() {
-  const [profile, setProfile]       = useState<CreatorProfile | null>(null)
-  const [view, setView]             = useState<AppView>('dashboard')
-  const [showKeys, setShowKeys]     = useState(false)
-  const [showSetup, setShowSetup]   = useState(false)
+  const [profiles, setProfilesRaw] = useState<StoredProfile[]>(() => loadProfiles())
+  const [activeId, setActiveIdRaw] = useState<string>(() => {
+    const id  = loadActiveId()
+    const all = loadProfiles()
+    return all.find(p => p.id === id) ? id : all[0]?.id || ''
+  })
+  const [view, setView]           = useState<AppView>('dashboard')
+  const [showKeys, setShowKeys]   = useState(false)
+  const [showSetup, setShowSetup] = useState(false)
+
+  const profile: StoredProfile | null = profiles.find(p => p.id === activeId) || profiles[0] || null
+
+  const persistProfiles = (ps: StoredProfile[], aid: string) => {
+    saveProfiles(ps)
+    saveActiveId(aid)
+    setProfilesRaw(ps)
+    setActiveIdRaw(aid)
+  }
+
+  const switchProfile = (id: string) => {
+    saveActiveId(id)
+    setActiveIdRaw(id)
+  }
 
   const handleProfileComplete = (p: CreatorProfile) => {
-    setProfile(p)
+    const sp = makeProfile(p)
+    persistProfiles([...profiles, sp], sp.id)
     setShowSetup(false)
     setShowKeys(true)
   }
 
+  const generatorProps = {
+    profiles,
+    activeProfileId: activeId,
+    onProfileSwitch: switchProfile,
+  }
+
   return (
     <div className="app-shell">
-      {/* Profile setup modal overlay */}
+      {/* Onboarding modal overlay */}
       {showSetup && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ position: 'relative' }}>
@@ -53,21 +83,43 @@ function App() {
       {showKeys && <ApiKeySetup onClose={() => setShowKeys(false)} />}
 
       <Sidebar
-        view={view} setView={setView}
+        view={view}
+        setView={setView}
         profile={profile}
-        onReset={() => setShowSetup(true)}
+        onEditProfile={() => setView('profile')}
         onKeys={() => setShowKeys(true)}
       />
+
       <main className="main-content">
-        {view === 'dashboard' && <Dashboard profile={profile} setView={setView} onSetup={() => setShowSetup(true)} />}
-        {view === 'scripts'   && profile && <ScriptGenerator profile={profile} />}
-        {view === 'calendar'  && profile && <ContentCalendar profile={profile} />}
-        {view === 'funnel'    && profile && <FunnelBuilder profile={profile} />}
-        {view === 'images'    && profile && <ImageGenerator profile={profile} />}
-        {view === 'video'     && profile && <VideoGenerator profile={profile} />}
-        {!profile && view !== 'dashboard' && (
+        {view === 'dashboard' && (
+          <Dashboard profile={profile} setView={setView} onSetup={() => setShowSetup(true)} />
+        )}
+        {view === 'profile' && (
+          <ProfilePage
+            profiles={profiles}
+            activeId={activeId}
+            onSave={persistProfiles}
+            onBack={() => setView('dashboard')}
+          />
+        )}
+        {view === 'scripts' && profile && (
+          <ScriptGenerator profile={profile} {...generatorProps} />
+        )}
+        {view === 'calendar' && profile && (
+          <ContentCalendar profile={profile} {...generatorProps} />
+        )}
+        {view === 'funnel' && profile && (
+          <FunnelBuilder profile={profile} {...generatorProps} />
+        )}
+        {view === 'images' && profile && (
+          <ImageGenerator profile={profile} {...generatorProps} />
+        )}
+        {view === 'video' && profile && (
+          <VideoGenerator profile={profile} {...generatorProps} />
+        )}
+        {!profile && view !== 'dashboard' && view !== 'profile' && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', flexDirection: 'column', gap: 16 }}>
-            <div style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>Setup your creator profile first</div>
+            <div style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>Set up your creator profile first</div>
             <button className="btn-primary" style={{ width: 'auto', padding: '12px 28px' }} onClick={() => setShowSetup(true)}>Get Started</button>
           </div>
         )}

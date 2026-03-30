@@ -4,7 +4,7 @@ type Props = {
   view: AppView
   setView: (v: AppView) => void
   profile: CreatorProfile | null
-  onReset: () => void
+  onEditProfile: () => void
   onKeys: () => void
 }
 
@@ -17,7 +17,7 @@ const navItems = [
   { id: 'funnel'    as AppView, icon: '◭', label: 'Revenue Funnel' },
 ]
 
-export function Sidebar({ view, setView, profile, onReset, onKeys }: Props) {
+export function Sidebar({ view, setView, profile, onEditProfile, onKeys }: Props) {
   return (
     <nav className="sidebar">
       <div className="sidebar-logo">AVATOOL</div>
@@ -43,11 +43,11 @@ export function Sidebar({ view, setView, profile, onReset, onKeys }: Props) {
             <div className="profile-name">{profile.name}</div>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button className="reset-btn" onClick={onKeys}>⚙ API Keys</button>
-              <button className="reset-btn" onClick={onReset}>Edit profile</button>
+              <button className="reset-btn" onClick={onEditProfile}>Edit profile</button>
             </div>
           </>
         ) : (
-          <button className="reset-btn" onClick={onReset} style={{ fontWeight: 600, color: 'var(--gold)' }}>
+          <button className="reset-btn" onClick={onEditProfile} style={{ fontWeight: 600, color: 'var(--gold)' }}>
             + Setup Profile
           </button>
         )}

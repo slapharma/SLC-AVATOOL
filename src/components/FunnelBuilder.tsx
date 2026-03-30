@@ -1,7 +1,15 @@
 import { useState } from 'react'
 import type { CreatorProfile } from '../App'
+import type { StoredProfile } from '../lib/profiles'
+import { InfoTip } from './InfoTip'
+import { ProfileSelector } from './ProfileSelector'
 
-type Props = { profile: CreatorProfile }
+type Props = {
+  profile: CreatorProfile
+  profiles?: StoredProfile[]
+  activeProfileId?: string
+  onProfileSwitch?: (id: string) => void
+}
 
 type FunnelStage = {
   id: string
@@ -51,7 +59,7 @@ async function callClaude(prompt: string): Promise<string> {
   return data.content?.[0]?.text || ''
 }
 
-export function FunnelBuilder({ profile }: Props) {
+export function FunnelBuilder({ profile, profiles = [], activeProfileId = '', onProfileSwitch }: Props) {
   const [selected, setSelected] = useState<FunnelStage | null>(null)
   const [stageContent, setStageContent] = useState<Record<string, StageContent>>({})
   const [loading, setLoading] = useState(false)
@@ -104,7 +112,12 @@ Respond ONLY with valid JSON (no markdown):
   return (
     <div>
       <div className="page-title">Revenue Funnel</div>
-      <div className="page-sub">Your complete journey from cold scroll to paying client — with organic, paid, and email/DM tactics</div>
+      <div className="page-sub">
+        Your complete journey from cold scroll to paying client — with organic, paid, and email/DM tactics
+        <InfoTip text="Click each funnel stage to get AI-generated tactics specific to your niche and offer. Each stage has different goals: Awareness = stop the scroll. Consideration = build trust. Conversion = make the ask. Retention = turn clients into referral machines." />
+      </div>
+
+      <ProfileSelector profiles={profiles} activeId={activeProfileId} onSwitch={onProfileSwitch || (() => {})} />
 
       <div className="funnel-layout">
         {/* Stages */}
@@ -178,13 +191,16 @@ Respond ONLY with valid JSON (no markdown):
               </div>
 
               {[
-                { key: 'organic', label: '📱 Organic Social', icon: '📱' },
-                { key: 'paid', label: '💰 Paid Ads', icon: '💰' },
-                { key: 'email_dm', label: '✉️ Email / DM Sequence', icon: '✉️' },
-                { key: 'offer', label: '🎯 Offer & CTA', icon: '🎯' },
-              ].map(({ key, label }) => (
+                { key: 'organic',  label: '📱 Organic Social',        tip: 'Content and community tactics you can do for free on your primary platform. These build the top of your funnel through reach and engagement.' },
+                { key: 'paid',     label: '💰 Paid Ads',              tip: 'Paid amplification tactics to accelerate reach or retarget warm audiences. Most effective once you have proven organic content to boost.' },
+                { key: 'email_dm', label: '✉️ Email / DM Sequence',   tip: 'Direct outreach and nurture sequences. DMs work best at Consideration. Email works at Conversion and Retention once you have a list.' },
+                { key: 'offer',    label: '🎯 Offer & CTA',           tip: 'The specific ask and framing for this stage. Matching your offer to the prospect\'s readiness level is the single biggest conversion lever.' },
+              ].map(({ key, label, tip }) => (
                 <div key={key} style={{ marginBottom: 16 }}>
-                  <div className="tactic-label">{label}</div>
+                  <div className="tactic-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {label}
+                    <InfoTip text={tip} />
+                  </div>
                   <div className="tactic-item" style={{ whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.7 }}>
                     {content[key as keyof StageContent]}
                   </div>

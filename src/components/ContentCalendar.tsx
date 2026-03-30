@@ -1,20 +1,27 @@
 import { generateText } from '../lib/ai'
 import { useState } from 'react'
 import type { CreatorProfile } from '../App'
+import type { StoredProfile } from '../lib/profiles'
+import { InfoTip } from './InfoTip'
+import { ProfileSelector } from './ProfileSelector'
 
-type Props = { profile: CreatorProfile }
+type Props = {
+  profile: CreatorProfile
+  profiles?: StoredProfile[]
+  activeProfileId?: string
+  onProfileSwitch?: (id: string) => void
+}
 
 type Post = { type: string; title: string; hook: string; cta: string }
 type Week = { theme: string; posts: Post[] }
 type CalendarData = { weeks: Week[] }
-
 
 const TYPE_COLORS: Record<string, string> = {
   educate: 'type-educate', relate: 'type-relate', sell: 'type-sell',
   story: 'type-story', proof: 'type-sell', contrarian: 'type-relate'
 }
 
-export function ContentCalendar({ profile }: Props) {
+export function ContentCalendar({ profile, profiles = [], activeProfileId = '', onProfileSwitch }: Props) {
   const [calendar, setCalendar] = useState<CalendarData | null>(null)
   const [loading, setLoading] = useState(false)
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
@@ -73,9 +80,14 @@ Generate exactly ${postsPerWeek} posts per week. Make titles specific to the nic
       <div className="page-title">Content Calendar</div>
       <div className="page-sub">A full month of strategic content, mapped to your niche and offer</div>
 
+      <ProfileSelector profiles={profiles} activeId={activeProfileId} onSwitch={onProfileSwitch || (() => {})} />
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 13, color: 'var(--text-dim)' }}>Posts per week:</span>
+          <span style={{ fontSize: 13, color: 'var(--text-dim)' }}>
+            Posts per week:
+            <InfoTip text="How many posts to schedule. 3/week is minimum viable for growth. 5/week is Ava's recommended baseline. 7/week is aggressive growth mode — only sustainable with a content system in place." />
+          </span>
           {[3, 4, 5, 7].map(n => (
             <button key={n} className={`chip ${postsPerWeek === n ? 'active' : ''}`}
               onClick={() => setPostsPerWeek(n)} style={{ fontSize: 13, padding: '6px 14px' }}>

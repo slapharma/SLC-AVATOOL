@@ -1,9 +1,17 @@
 import { useState } from 'react'
 import type { CreatorProfile } from '../App'
+import type { StoredProfile } from '../lib/profiles'
 import { generateImage, generateText, IMAGE_MODELS } from '../lib/ai'
 import type { ImageModel } from '../lib/ai'
+import { InfoTip } from './InfoTip'
+import { ProfileSelector } from './ProfileSelector'
 
-type Props = { profile: CreatorProfile }
+type Props = {
+  profile: CreatorProfile
+  profiles?: StoredProfile[]
+  activeProfileId?: string
+  onProfileSwitch?: (id: string) => void
+}
 
 type AspectRatio = '1:1' | '9:16' | '16:9' | '4:5'
 
@@ -37,7 +45,7 @@ const BADGE_TEXT: Record<string, string> = {
   PREMIUM: '#c084fc', FACES: '#fb923c', FAST: '#f43f5e',
 }
 
-export function ImageGenerator({ profile }: Props) {
+export function ImageGenerator({ profile, profiles = [], activeProfileId = '', onProfileSwitch }: Props) {
   const [model, setModel] = useState<ImageModel>('nano-banana')
   const [contentType, setContentType] = useState('post-cover')
   const [aspect, setAspect] = useState<AspectRatio>('1:1')
@@ -63,7 +71,6 @@ export function ImageGenerator({ profile }: Props) {
       if (contentType === 'custom') {
         finalPrompt = customPrompt
       } else {
-        // Use free OpenRouter model to craft the visual prompt
         setBuildingPrompt(true)
         const promptInstruction = `You are an expert at writing image generation prompts for social media content.
 
@@ -111,13 +118,18 @@ Return ONLY the prompt, nothing else.`
         <span style={{ color: 'var(--gold)' }}>Prompts built free via DeepSeek V3.</span>
       </div>
 
+      <ProfileSelector profiles={profiles} activeId={activeProfileId} onSwitch={onProfileSwitch || (() => {})} />
+
       <div className="gen-layout" style={{ gridTemplateColumns: '320px 1fr' }}>
         {/* Controls */}
         <div className="gen-controls">
 
           {/* Model selector */}
           <div style={{ marginBottom: 20 }}>
-            <div className="form-label">Model</div>
+            <div className="form-label">
+              Model
+              <InfoTip text="Which AI image model to use. Nano Banana (Gemini) is cheapest for quick social posts. FLUX is best for photorealistic shots. Seedream excels at faces and portraits. Riverflow handles text overlays best." />
+            </div>
             {(Object.entries(IMAGE_MODELS) as [ImageModel, typeof IMAGE_MODELS[ImageModel]][]).map(([key, m]) => (
               <div key={key}
                 onClick={() => setModel(key)}
@@ -147,7 +159,10 @@ Return ONLY the prompt, nothing else.`
 
           {/* Content type */}
           <div style={{ marginBottom: 20 }}>
-            <div className="form-label">Content Type</div>
+            <div className="form-label">
+              Content Type
+              <InfoTip text="The format and purpose of the image. Post Cover is for feed thumbnails. Carousel Slide for multi-panel educational posts. Quote Card for text-based authority content. Lifestyle for aspirational, relatable imagery." />
+            </div>
             <div className="chip-group" style={{ flexWrap: 'wrap' }}>
               {CONTENT_TYPES.map(ct => (
                 <button key={ct.id} className={`chip ${contentType === ct.id ? 'active' : ''}`}
@@ -170,7 +185,10 @@ Return ONLY the prompt, nothing else.`
             </div>
           ) : (
             <div className="form-group">
-              <label className="form-label">Topic / Subject</label>
+              <label className="form-label">
+                Topic / Subject
+                <InfoTip text="What the image should represent. DeepSeek V3 (free) builds the full visual prompt from your brief — you don't need to be a prompt engineer. The more specific the subject, the better the result." />
+              </label>
               <input className="form-input"
                 placeholder={`e.g. ${profile.niche} growth strategy`}
                 value={topic}
@@ -183,7 +201,10 @@ Return ONLY the prompt, nothing else.`
 
           {/* Aspect ratio */}
           <div style={{ marginBottom: 20 }}>
-            <div className="form-label">Aspect Ratio</div>
+            <div className="form-label">
+              Aspect Ratio
+              <InfoTip text="Dimensions for your output. 9:16 for Reels and Stories. 1:1 for feed posts. 4:5 is Instagram-optimal for feed (shows larger). 16:9 for YouTube thumbnails or landscape posts." />
+            </div>
             <div className="chip-group">
               {ASPECT_RATIOS.map(ar => (
                 <button key={ar.value} className={`chip ${aspect === ar.value ? 'active' : ''}`}
@@ -211,7 +232,6 @@ Return ONLY the prompt, nothing else.`
         {/* Output */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-          {/* Main image output */}
           <div className="gen-output" style={{ minHeight: 400 }}>
             <div style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Output · {IMAGE_MODELS[model].label}
