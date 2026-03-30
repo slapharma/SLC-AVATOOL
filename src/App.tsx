@@ -9,6 +9,7 @@ import { VideoGenerator } from './components/VideoGenerator'
 import { Sidebar } from './components/Sidebar'
 import { ApiKeySetup } from './components/ApiKeySetup'
 import { ProfilePage } from './components/ProfilePage'
+import { CampaignsPage } from './components/CampaignsPage'
 import { loadProfiles, saveProfiles, loadActiveId, saveActiveId, makeProfile } from './lib/profiles'
 import type { StoredProfile } from './lib/profiles'
 
@@ -24,7 +25,7 @@ export type CreatorProfile = {
 }
 
 export type { StoredProfile }
-export type AppView = 'dashboard' | 'scripts' | 'calendar' | 'funnel' | 'images' | 'video' | 'profile'
+export type AppView = 'dashboard' | 'scripts' | 'calendar' | 'funnel' | 'images' | 'video' | 'profile' | 'campaigns'
 
 function App() {
   const [profiles, setProfilesRaw] = useState<StoredProfile[]>(() => loadProfiles())
@@ -117,7 +118,10 @@ function App() {
         {view === 'video' && profile && (
           <VideoGenerator profile={profile} {...generatorProps} />
         )}
-        {!profile && view !== 'dashboard' && view !== 'profile' && (
+        {view === 'campaigns' && (
+          <CampaignsPage profiles={profiles} />
+        )}
+        {!profile && view !== 'dashboard' && view !== 'profile' && view !== 'campaigns' && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', flexDirection: 'column', gap: 16 }}>
             <div style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>Set up your creator profile first</div>
             <button className="btn-primary" style={{ width: 'auto', padding: '12px 28px' }} onClick={() => setShowSetup(true)}>Get Started</button>

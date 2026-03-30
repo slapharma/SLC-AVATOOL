@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { CreatorProfile } from '../App'
 import type { StoredProfile } from '../lib/profiles'
 import { streamText } from '../lib/ai'
+import { saveCampaign } from '../lib/campaigns'
 import { InfoTip } from './InfoTip'
 import { ProfileSelector } from './ProfileSelector'
 
@@ -45,6 +46,7 @@ export function ScriptGenerator({ profile, profiles = [], activeProfileId = '', 
   const [loading, setLoading]       = useState(false)
   const [copied, setCopied]         = useState(false)
   const [mode, setMode]             = useState<'script' | 'hooks' | 'caption'>('script')
+  const [saved, setSaved]           = useState(false)
 
   const generate = async () => {
     if (!topic) return
@@ -114,16 +116,29 @@ Write an Instagram caption for a ${pillar} post on: "${topic}"
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const saveToC = () => {
+    const active = profiles.find(p => p.id === activeProfileId)
+    saveCampaign({
+      type: mode === 'script' ? 'script' : mode === 'hooks' ? 'hooks' : 'caption',
+      profileId: activeProfileId,
+      profileName: active?.name || profile.name,
+      niche: profile.niche,
+      title: topic,
+      output,
+    })
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
   return (
     <div>
       <div className="page-title">Script Generator</div>
       <div className="page-sub">AI-powered content creation using Ava's proven frameworks</div>
 
-      <ProfileSelector profiles={profiles} activeId={activeProfileId} onSwitch={onProfileSwitch || (() => {})} />
-
       <div className="gen-layout">
         {/* Controls */}
         <div className="gen-controls">
+          <ProfileSelector profiles={profiles} activeId={activeProfileId} onSwitch={onProfileSwitch || (() => {})} />
           <div style={{ marginBottom: 20 }}>
             <div className="form-label">
               Generate
@@ -234,6 +249,7 @@ Write an Instagram caption for a ${pillar} post on: "${topic}"
           {output && (
             <div className="output-actions">
               <button className="copy-btn" onClick={copy}>{copied ? '✓ Copied!' : '⧉ Copy'}</button>
+              <button className="copy-btn" onClick={saveToC}>{saved ? '✓ Saved!' : '⊞ Save'}</button>
               <button className="copy-btn" onClick={() => { setOutput(''); setTopic('') }}>↺ Reset</button>
             </div>
           )}

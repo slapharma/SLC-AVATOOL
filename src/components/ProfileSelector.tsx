@@ -6,29 +6,28 @@ type Props = {
   onSwitch: (id: string) => void
 }
 
+/** Always-visible profile selector — place as first child inside gen-controls */
 export function ProfileSelector({ profiles, activeId, onSwitch }: Props) {
-  if (profiles.length <= 1) return null
+  const active = profiles.find(p => p.id === activeId)
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20,
-      padding: '8px 14px', background: 'var(--surface-2)', border: '1px solid var(--border)',
-    }}>
-      <span style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '1px', flexShrink: 0, fontWeight: 600 }}>
-        Profile
-      </span>
+    <div style={{ marginBottom: 20, paddingBottom: 18, borderBottom: '1px solid var(--border)' }}>
+      <div className="form-label" style={{ marginBottom: 7 }}>Active Profile</div>
       <select
         value={activeId}
         onChange={e => onSwitch(e.target.value)}
-        style={{
-          flex: 1, background: 'var(--surface)', border: '1px solid var(--border)',
-          color: 'var(--text)', fontSize: 13, padding: '5px 10px',
-          fontFamily: 'DM Sans, sans-serif', outline: 'none', cursor: 'pointer',
-        }}
+        className="form-select"
+        style={{ fontSize: 13 }}
       >
         {profiles.map(p => (
           <option key={p.id} value={p.id}>{p.name} · {p.niche}</option>
         ))}
+        {profiles.length === 0 && <option value="">No profile — set one up first</option>}
       </select>
+      {active && (
+        <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.5 }}>
+          {active.audience ? `Audience: ${active.audience.slice(0, 60)}${active.audience.length > 60 ? '…' : ''}` : active.platform}
+        </div>
+      )}
     </div>
   )
 }

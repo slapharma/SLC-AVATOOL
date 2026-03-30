@@ -2,6 +2,7 @@ import { generateText } from '../lib/ai'
 import { useState } from 'react'
 import type { CreatorProfile } from '../App'
 import type { StoredProfile } from '../lib/profiles'
+import { saveCampaign } from '../lib/campaigns'
 import { InfoTip } from './InfoTip'
 import { ProfileSelector } from './ProfileSelector'
 
@@ -26,6 +27,7 @@ export function ContentCalendar({ profile, profiles = [], activeProfileId = '', 
   const [loading, setLoading] = useState(false)
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
   const [postsPerWeek, setPostsPerWeek] = useState(5)
+  const [calSaved, setCalSaved] = useState(false)
 
   const generate = async () => {
     setLoading(true)
@@ -80,9 +82,11 @@ Generate exactly ${postsPerWeek} posts per week. Make titles specific to the nic
       <div className="page-title">Content Calendar</div>
       <div className="page-sub">A full month of strategic content, mapped to your niche and offer</div>
 
-      <ProfileSelector profiles={profiles} activeId={activeProfileId} onSwitch={onProfileSwitch || (() => {})} />
+      <div style={{ maxWidth: 360, marginBottom: 16 }}>
+        <ProfileSelector profiles={profiles} activeId={activeProfileId} onSwitch={onProfileSwitch || (() => {})} />
+      </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 13, color: 'var(--text-dim)' }}>
             Posts per week:
@@ -99,6 +103,15 @@ Generate exactly ${postsPerWeek} posts per week. Make titles specific to the nic
           style={{ width: 'auto', padding: '12px 28px' }}>
           {loading ? 'Building calendar…' : '▦ Generate Month Plan'}
         </button>
+        {calendar && (
+          <button className="btn-secondary" onClick={() => {
+            const active = profiles.find(p => p.id === activeProfileId)
+            saveCampaign({ type: 'calendar', profileId: activeProfileId, profileName: active?.name || profile.name, niche: profile.niche, title: `${postsPerWeek}x/week · ${profile.niche}`, output: JSON.stringify(calendar) })
+            setCalSaved(true); setTimeout(() => setCalSaved(false), 2000)
+          }} style={{ padding: '12px 20px' }}>
+            {calSaved ? '✓ Saved!' : '⊞ Save Calendar'}
+          </button>
+        )}
       </div>
 
       {loading && (

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { CreatorProfile } from '../App'
 import type { StoredProfile } from '../lib/profiles'
+import { saveCampaign } from '../lib/campaigns'
 import { InfoTip } from './InfoTip'
 import { ProfileSelector } from './ProfileSelector'
 
@@ -117,7 +118,9 @@ Respond ONLY with valid JSON (no markdown):
         <InfoTip text="Click each funnel stage to get AI-generated tactics specific to your niche and offer. Each stage has different goals: Awareness = stop the scroll. Consideration = build trust. Conversion = make the ask. Retention = turn clients into referral machines." />
       </div>
 
-      <ProfileSelector profiles={profiles} activeId={activeProfileId} onSwitch={onProfileSwitch || (() => {})} />
+      <div style={{ maxWidth: 360, marginBottom: 20 }}>
+        <ProfileSelector profiles={profiles} activeId={activeProfileId} onSwitch={onProfileSwitch || (() => {})} />
+      </div>
 
       <div className="funnel-layout">
         {/* Stages */}
@@ -207,10 +210,18 @@ Respond ONLY with valid JSON (no markdown):
                 </div>
               ))}
 
-              <button className="btn-secondary" onClick={() => { setStageContent(prev => { const n = {...prev}; delete n[selected.id]; return n }); loadStage(selected) }}
-                style={{ width: '100%', marginTop: 8, fontSize: 13 }}>
-                ↺ Regenerate
-              </button>
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button className="btn-secondary" onClick={() => { setStageContent(prev => { const n = {...prev}; delete n[selected.id]; return n }); loadStage(selected) }}
+                  style={{ flex: 1, fontSize: 13 }}>
+                  ↺ Regenerate
+                </button>
+                <button className="btn-secondary" onClick={() => {
+                  const active = profiles.find(p => p.id === activeProfileId)
+                  saveCampaign({ type: 'funnel', profileId: activeProfileId, profileName: active?.name || profile.name, niche: profile.niche, title: `${selected.name} — ${profile.niche}`, output: JSON.stringify(content) })
+                }} style={{ flex: 1, fontSize: 13 }}>
+                  ⊞ Save Stage
+                </button>
+              </div>
             </>
           )}
         </div>

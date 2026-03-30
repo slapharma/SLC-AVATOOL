@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { CreatorProfile } from '../App'
 import type { StoredProfile } from '../lib/profiles'
+import { saveCampaign } from '../lib/campaigns'
 import { InfoTip } from './InfoTip'
 import { ProfileSelector } from './ProfileSelector'
 
@@ -115,6 +116,7 @@ export function VideoGenerator({ profile, profiles = [], activeProfileId = '', o
   const [videoUrl, setVideoUrl]       = useState('')
   const [error, setError]             = useState('')
   const [gallery, setGallery]         = useState<{ url: string; prompt: string }[]>([])
+  const [vidSaved, setVidSaved]       = useState(false)
 
   const falKey = localStorage.getItem('sre_fal_key') || ''
   const orKey  = localStorage.getItem('sre_or_key') || ''
@@ -185,11 +187,10 @@ export function VideoGenerator({ profile, profiles = [], activeProfileId = '', o
         </div>
       )}
 
-      <ProfileSelector profiles={profiles} activeId={activeProfileId} onSwitch={onProfileSwitch || (() => {})} />
-
       <div className="gen-layout" style={{ gridTemplateColumns: '300px 1fr' }}>
         {/* Controls */}
         <div className="gen-controls">
+          <ProfileSelector profiles={profiles} activeId={activeProfileId} onSwitch={onProfileSwitch || (() => {})} />
 
           {/* Mode */}
           <div style={{ marginBottom: 18 }}>
@@ -402,6 +403,11 @@ export function VideoGenerator({ profile, profiles = [], activeProfileId = '', o
                 <div className="output-actions">
                   <a href={videoUrl} download="social-video.mp4" className="copy-btn" style={{ textDecoration: 'none' }}>⬇ Download</a>
                   <button className="copy-btn" onClick={() => navigator.clipboard.writeText(videoUrl)}>⧉ Copy URL</button>
+                  <button className="copy-btn" onClick={() => {
+                    const active = profiles.find(p => p.id === activeProfileId)
+                    saveCampaign({ type: 'video', profileId: activeProfileId, profileName: active?.name || profile.name, niche: profile.niche, title: topic || contentType, output: videoUrl })
+                    setVidSaved(true); setTimeout(() => setVidSaved(false), 2000)
+                  }}>{vidSaved ? '✓ Saved!' : '⊞ Save'}</button>
                   <button className="copy-btn" onClick={() => { setVideoUrl(''); setGeneratedPrompt('') }}>↺ Reset</button>
                   <button className="copy-btn" onClick={generate}>↻ Regenerate</button>
                 </div>

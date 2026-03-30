@@ -15,6 +15,7 @@ const navItems = [
   { id: 'video'     as AppView, icon: '▶', label: 'Video Generator' },
   { id: 'calendar'  as AppView, icon: '▦', label: 'Content Calendar' },
   { id: 'funnel'    as AppView, icon: '◭', label: 'Revenue Funnel' },
+  { id: 'campaigns' as AppView, icon: '⊞', label: 'Campaigns' },
 ]
 
 export function Sidebar({ view, setView, profile, onEditProfile, onKeys }: Props) {

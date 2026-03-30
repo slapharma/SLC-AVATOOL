@@ -3,6 +3,7 @@ import type { CreatorProfile } from '../App'
 import type { StoredProfile } from '../lib/profiles'
 import { generateImage, generateText, IMAGE_MODELS } from '../lib/ai'
 import type { ImageModel } from '../lib/ai'
+import { saveCampaign } from '../lib/campaigns'
 import { InfoTip } from './InfoTip'
 import { ProfileSelector } from './ProfileSelector'
 
@@ -57,6 +58,7 @@ export function ImageGenerator({ profile, profiles = [], activeProfileId = '', o
   const [generatedPrompt, setGeneratedPrompt] = useState('')
   const [error, setError] = useState('')
   const [gallery, setGallery] = useState<{ url: string; prompt: string; model: string }[]>([])
+  const [imgSaved, setImgSaved] = useState(false)
 
   const selectedContent = CONTENT_TYPES.find(c => c.id === contentType)!
 
@@ -118,11 +120,10 @@ Return ONLY the prompt, nothing else.`
         <span style={{ color: 'var(--gold)' }}>Prompts built free via DeepSeek V3.</span>
       </div>
 
-      <ProfileSelector profiles={profiles} activeId={activeProfileId} onSwitch={onProfileSwitch || (() => {})} />
-
       <div className="gen-layout" style={{ gridTemplateColumns: '320px 1fr' }}>
         {/* Controls */}
         <div className="gen-controls">
+          <ProfileSelector profiles={profiles} activeId={activeProfileId} onSwitch={onProfileSwitch || (() => {})} />
 
           {/* Model selector */}
           <div style={{ marginBottom: 20 }}>
@@ -284,6 +285,11 @@ Return ONLY the prompt, nothing else.`
 
                 <div className="output-actions">
                   <button className="copy-btn" onClick={() => download(generatedImage, 0)}>⬇ Download</button>
+                  <button className="copy-btn" onClick={() => {
+                    const active = profiles.find(p => p.id === activeProfileId)
+                    saveCampaign({ type: 'image', profileId: activeProfileId, profileName: active?.name || profile.name, niche: profile.niche, title: topic || contentType, output: generatedImage })
+                    setImgSaved(true); setTimeout(() => setImgSaved(false), 2000)
+                  }}>{imgSaved ? '✓ Saved!' : '⊞ Save'}</button>
                   <button className="copy-btn" onClick={() => { setGeneratedImage(null); setGeneratedPrompt('') }}>↺ Reset</button>
                   <button className="copy-btn" onClick={buildAndGenerate}>↻ Regenerate</button>
                 </div>
