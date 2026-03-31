@@ -1,10 +1,13 @@
 // ─── AI Router ───────────────────────────────────────────────────────────────
-// Text:   Claude API (Sonnet 4.6) OR OpenRouter free models (DeepSeek V3, Llama)
+// Text:   Claude API (Sonnet 4.6) proxied via Supabase Edge Function (CORS fix)
+//         OR OpenRouter free models (DeepSeek V3, Llama)
 // Images: OpenRouter — single key, per-image billing, 6 models
 // Video:  FAL.ai — Kling 3.0 — only option (OR has no video generation yet)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CLAUDE_BASE     = 'https://api.anthropic.com/v1/messages'
+// Claude calls go through our Edge Function proxy to avoid browser CORS blocks.
+// Anthropic's API does not allow direct fetch() from browsers.
+const CLAUDE_PROXY    = 'https://doncwyumuygrryykanqb.supabase.co/functions/v1/claude-proxy'
 const OPENROUTER_BASE = 'https://openrouter.ai/api/v1'
 
 // Keys are scoped by user ID to prevent cross-user bleed on shared browsers.
@@ -45,18 +48,22 @@ export async function streamText(
     const key = getKey('sre_claude_key')
     if (!key) throw new Error('Claude API key not set. Click ⚙ API Keys to add it.')
 
-    const res = await fetch(CLAUDE_BASE, {
+    // Route through Edge Function proxy — Anthropic blocks direct browser fetch (CORS)
+    const res = await fetch(CLAUDE_PROXY, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
+        key,
+        max_tokens: 1500,
         stream: true,
         messages: [{ role: 'user', content: prompt }]
       })
     })
 
-    if (!res.ok) throw new Error(`Claude API error ${res.status}`)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error((err as { error?: string }).error || `Claude API error ${res.status}`)
+    }
 
     const reader = res.body!.getReader()
     const decoder = new TextDecoder()
@@ -89,8 +96,8 @@ export async function streamText(
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${key}`,
-        'HTTP-Referer': 'https://socialrevenueengine.app',
-        'X-Title': 'Social Revenue Engine'
+        'HTTP-Referer': 'https://avatool-slapharma.vercel.app',
+        'X-Title': 'AVATOOL'
       },
       body: JSON.stringify({
         model: modelId,
@@ -126,18 +133,23 @@ export async function streamText(
 export async function generateText(prompt: string, model: TextModel = 'claude-sonnet'): Promise<string> {
   if (model === 'claude-sonnet') {
     const key = getKey('sre_claude_key')
-    if (!key) throw new Error('Claude API key not set.')
+    if (!key) throw new Error('Claude API key not set. Click ⚙ API Keys to add it.')
 
-    const res = await fetch(CLAUDE_BASE, {
+    // Route through Edge Function proxy — Anthropic blocks direct browser fetch (CORS)
+    const res = await fetch(CLAUDE_PROXY, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
+        key,
+        max_tokens: 1500,
+        stream: false,
         messages: [{ role: 'user', content: prompt }]
       })
     })
-    if (!res.ok) throw new Error(`Claude API error ${res.status}`)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error((err as { error?: string }).error || `Claude API error ${res.status}`)
+    }
     const data = await res.json()
     return data.content?.[0]?.text || ''
 
@@ -154,8 +166,8 @@ export async function generateText(prompt: string, model: TextModel = 'claude-so
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${key}`,
-        'HTTP-Referer': 'https://socialrevenueengine.app',
-        'X-Title': 'Social Revenue Engine'
+        'HTTP-Referer': 'https://avatool-slapharma.vercel.app',
+        'X-Title': 'AVATOOL'
       },
       body: JSON.stringify({ model: modelId, messages: [{ role: 'user', content: prompt }] })
     })
@@ -172,17 +184,19 @@ export type ImageModel =
   | 'riverflow-fast'    // sourceful/riverflow-v2-fast            $0.02   ← text in images
   | 'riverflow-pro'     // sourceful/riverflow-v2-pro             $0.15   ← premium
   | 'seedream'          // bytedance-seed/seedream-4.5            $0.04   ← portraits
-  | 'flux-klein'        // black-forest-labs/flux.2-klein-4b      $0.014
+  | 'flux-schnell'      // black-forest-labs/flux-1-schnell       free    ← fast
 
 export const IMAGE_MODELS: Record<ImageModel, {
-  id: string; label: string; cost: string; bestFor: string; badge: string
+  id: string; label: string; cost: string; bestFor: string; badge: string;
+  // Gemini models need modalities:['image','text']; pure image models need ['image']
+  modalities: string[]
 }> = {
-  'nano-banana':    { id: 'google/gemini-2.5-flash-image',              label: 'Nano Banana',    cost: '~$0.003', bestFor: 'Social posts, quick edits',        badge: 'CHEAPEST' },
-  'nano-banana-2':  { id: 'google/gemini-3.1-flash-image-preview',      label: 'Nano Banana 2',  cost: '~$0.006', bestFor: 'Better quality, Pro-level speed',   badge: 'BALANCED' },
-  'riverflow-fast': { id: 'sourceful/riverflow-v2-fast',                label: 'Riverflow Fast', cost: '$0.02',   bestFor: 'Text overlays, carousels',           badge: 'TEXT' },
-  'riverflow-pro':  { id: 'sourceful/riverflow-v2-pro',                 label: 'Riverflow Pro',  cost: '$0.15',   bestFor: 'Perfect text, premium output',        badge: 'PREMIUM' },
-  'seedream':       { id: 'bytedance-seed/seedream-4.5',                label: 'Seedream 4.5',   cost: '$0.04',   bestFor: 'Portraits, faces, social aesthetic',  badge: 'FACES' },
-  'flux-klein':     { id: 'black-forest-labs/flux.2-klein-4b',          label: 'FLUX.2 Klein',   cost: '$0.014',  bestFor: 'High-throughput, photorealistic',      badge: 'FAST' },
+  'nano-banana':    { id: 'google/gemini-2.5-flash-image',         label: 'Gemini Flash',   cost: '~$0.003', bestFor: 'Social posts, quick edits',        badge: 'CHEAPEST', modalities: ['image', 'text'] },
+  'nano-banana-2':  { id: 'google/gemini-3.1-flash-image-preview', label: 'Gemini 3.1',     cost: '~$0.006', bestFor: 'Better quality, Pro-level speed',   badge: 'BALANCED', modalities: ['image', 'text'] },
+  'riverflow-fast': { id: 'sourceful/riverflow-v2-fast',           label: 'Riverflow Fast', cost: '$0.02',   bestFor: 'Text overlays, carousels',           badge: 'TEXT',     modalities: ['image'] },
+  'riverflow-pro':  { id: 'sourceful/riverflow-v2-pro',            label: 'Riverflow Pro',  cost: '$0.15',   bestFor: 'Perfect text, premium output',        badge: 'PREMIUM',  modalities: ['image'] },
+  'seedream':       { id: 'bytedance-seed/seedream-4.5',           label: 'Seedream 4.5',   cost: '$0.04',   bestFor: 'Portraits, faces, social aesthetic',  badge: 'FACES',    modalities: ['image'] },
+  'flux-schnell':   { id: 'black-forest-labs/flux-1-schnell',      label: 'FLUX Schnell',   cost: 'Free',    bestFor: 'High-throughput, photorealistic',      badge: 'FREE',     modalities: ['image'] },
 }
 
 export async function generateImage(
@@ -199,13 +213,13 @@ export async function generateImage(
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${key}`,
-      'HTTP-Referer': 'https://socialrevenueengine.app',
-      'X-Title': 'Social Revenue Engine'
+      'HTTP-Referer': 'https://avatool-slapharma.vercel.app',
+      'X-Title': 'AVATOOL'
     },
     body: JSON.stringify({
       model: modelInfo.id,
       messages: [{ role: 'user', content: prompt }],
-      modalities: ['image'],
+      modalities: modelInfo.modalities,
       image_config: { aspect_ratio: aspectRatio }
     })
   })
@@ -216,9 +230,16 @@ export async function generateImage(
   }
 
   const data = await res.json()
-  const imgData = data.choices?.[0]?.message?.images?.[0]
-  if (imgData) return imgData
+  // images[] contains objects with image_url.url (base64 data URL)
+  const imgUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url
+  if (imgUrl) return imgUrl
+  // Some models return base64 directly in content
   const content = data.choices?.[0]?.message?.content
   if (typeof content === 'string' && content.startsWith('data:')) return content
-  throw new Error('No image returned. Model may not support this modality.')
+  // Content may be an array of parts (Gemini native format)
+  if (Array.isArray(content)) {
+    const imgPart = content.find((p: { type: string }) => p.type === 'image_url')
+    if (imgPart?.image_url?.url) return imgPart.image_url.url
+  }
+  throw new Error('No image returned from model. Check your OpenRouter credits and try a different model.')
 }
