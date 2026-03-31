@@ -12,6 +12,7 @@ type Props = {
   activeProfileId?: string
   onProfileSwitch?: (id: string) => void
   saveCampaign?: (c: Omit<Campaign, 'id' | 'createdAt'>) => Promise<Campaign>
+  onOpenKeys?: () => void
 }
 
 type Post = { type: string; title: string; hook: string; cta: string }
@@ -23,7 +24,7 @@ const TYPE_COLORS: Record<string, string> = {
   story: 'type-story', proof: 'type-sell', contrarian: 'type-relate'
 }
 
-export function ContentCalendar({ profile, profiles = [], activeProfileId = '', onProfileSwitch, saveCampaign }: Props) {
+export function ContentCalendar({ profile, profiles = [], activeProfileId = '', onProfileSwitch, saveCampaign, onOpenKeys }: Props) {
   const [calendar, setCalendar] = useState<CalendarData | null>(null)
   const [loading, setLoading] = useState(false)
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
@@ -72,8 +73,10 @@ Generate exactly ${postsPerWeek} posts per week. Make titles specific to the nic
       const clean = raw.replace(/```json|```/g, '').trim()
       const data = JSON.parse(clean)
       setCalendar(data)
-    } catch (e) {
-      console.error(e)
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Generation failed'
+      if (msg.toLowerCase().includes('key')) onOpenKeys?.()
+      console.error(msg)
     }
     setLoading(false)
   }

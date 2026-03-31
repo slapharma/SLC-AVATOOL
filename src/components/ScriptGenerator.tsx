@@ -12,6 +12,7 @@ type Props = {
   activeProfileId?: string
   onProfileSwitch?: (id: string) => void
   saveCampaign?: (c: Omit<Campaign, 'id' | 'createdAt'>) => Promise<Campaign>
+  onOpenKeys?: () => void
 }
 
 const STRUCTURES = [
@@ -37,7 +38,7 @@ const HOOK_TYPES = [
 
 const CTA_GOALS = ['Grow followers', 'Drive engagement', 'Generate leads', 'Save/share viral']
 
-export function ScriptGenerator({ profile, profiles = [], activeProfileId = '', onProfileSwitch, saveCampaign }: Props) {
+export function ScriptGenerator({ profile, profiles = [], activeProfileId = '', onProfileSwitch, saveCampaign, onOpenKeys }: Props) {
   const [structure, setStructure]   = useState('tutorial')
   const [pillar, setPillar]         = useState('educate')
   const [hookType, setHookType]     = useState('Curiosity Gap')
@@ -105,8 +106,10 @@ Write an Instagram caption for a ${pillar} post on: "${topic}"
       await streamText(prompt, (chunk) => {
         setOutput(prev => prev + chunk)
       }, 'claude-sonnet')
-    } catch {
-      setOutput('Error generating. Check your Claude API key in ⚙ API Keys.')
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Generation failed'
+      setOutput(`Error: ${msg}`)
+      if (msg.toLowerCase().includes('key')) onOpenKeys?.()
     }
     setLoading(false)
   }

@@ -11,6 +11,7 @@ type Props = {
   activeProfileId?: string
   onProfileSwitch?: (id: string) => void
   saveCampaign?: (c: Omit<Campaign, 'id' | 'createdAt'>) => Promise<Campaign>
+  onOpenKeys?: () => void
 }
 
 type FunnelStage = {
@@ -61,7 +62,7 @@ async function callClaude(prompt: string): Promise<string> {
   return data.content?.[0]?.text || ''
 }
 
-export function FunnelBuilder({ profile, profiles = [], activeProfileId = '', onProfileSwitch, saveCampaign }: Props) {
+export function FunnelBuilder({ profile, profiles = [], activeProfileId = '', onProfileSwitch, saveCampaign, onOpenKeys }: Props) {
   const [selected, setSelected] = useState<FunnelStage | null>(null)
   const [stageContent, setStageContent] = useState<Record<string, StageContent>>({})
   const [loading, setLoading] = useState(false)
@@ -95,14 +96,16 @@ Respond ONLY with valid JSON (no markdown):
       const clean = raw.replace(/```json|```/g, '').trim()
       const data = JSON.parse(clean)
       setStageContent(prev => ({ ...prev, [stage.id]: data }))
-    } catch (e) {
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Generation failed'
+      if (msg.toLowerCase().includes('key')) onOpenKeys?.()
       setStageContent(prev => ({
         ...prev,
         [stage.id]: {
-          organic: 'Unable to load — please try again.',
-          paid: 'Unable to load — please try again.',
-          email_dm: 'Unable to load — please try again.',
-          offer: 'Unable to load — please try again.'
+          organic: `Error: ${msg}`,
+          paid: 'Please check your API keys and try again.',
+          email_dm: 'Please check your API keys and try again.',
+          offer: 'Please check your API keys and try again.'
         }
       }))
     }

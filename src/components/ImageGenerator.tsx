@@ -13,6 +13,7 @@ type Props = {
   activeProfileId?: string
   onProfileSwitch?: (id: string) => void
   saveCampaign?: (c: Omit<Campaign, 'id' | 'createdAt'>) => Promise<Campaign>
+  onOpenKeys?: () => void
 }
 
 type AspectRatio = '1:1' | '9:16' | '16:9' | '4:5'
@@ -47,7 +48,7 @@ const BADGE_TEXT: Record<string, string> = {
   PREMIUM: '#c084fc', FACES: '#fb923c', FAST: '#f43f5e',
 }
 
-export function ImageGenerator({ profile, profiles = [], activeProfileId = '', onProfileSwitch, saveCampaign }: Props) {
+export function ImageGenerator({ profile, profiles = [], activeProfileId = '', onProfileSwitch, saveCampaign, onOpenKeys }: Props) {
   const [model, setModel] = useState<ImageModel>('nano-banana')
   const [contentType, setContentType] = useState('post-cover')
   const [aspect, setAspect] = useState<AspectRatio>('1:1')
@@ -100,6 +101,7 @@ Return ONLY the prompt, nothing else.`
       const msg = e instanceof Error ? e.message : 'Generation failed'
       setError(msg)
       setBuildingPrompt(false)
+      if (msg.toLowerCase().includes('key')) onOpenKeys?.()
     }
 
     setLoading(false)

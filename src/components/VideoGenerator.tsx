@@ -11,6 +11,7 @@ type Props = {
   activeProfileId?: string
   onProfileSwitch?: (id: string) => void
   saveCampaign?: (c: Omit<Campaign, 'id' | 'createdAt'>) => Promise<Campaign>
+  onOpenKeys?: () => void
 }
 
 type VideoMode = 'text-to-video' | 'image-to-video'
@@ -102,7 +103,7 @@ Return ONLY the prompt. No preamble. Focus on visual description, camera movemen
   return data.choices?.[0]?.message?.content?.trim() || topic
 }
 
-export function VideoGenerator({ profile, profiles = [], activeProfileId = '', onProfileSwitch, saveCampaign }: Props) {
+export function VideoGenerator({ profile, profiles = [], activeProfileId = '', onProfileSwitch, saveCampaign, onOpenKeys }: Props) {
   const [mode, setMode]               = useState<VideoMode>('text-to-video')
   const [contentType, setContentType] = useState('hook')
   const [topic, setTopic]             = useState('')
@@ -158,8 +159,10 @@ export function VideoGenerator({ profile, profiles = [], activeProfileId = '', o
       setVideoUrl(url)
       setGallery(prev => [{ url, prompt: finalPrompt }, ...prev.slice(0, 5)])
     } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Generation failed'
       setBuildingPrompt(false)
-      setError(e instanceof Error ? e.message : 'Generation failed')
+      setError(msg)
+      if (msg.toLowerCase().includes('key')) onOpenKeys?.()
     }
 
     setLoading(false)

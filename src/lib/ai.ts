@@ -7,9 +7,30 @@
 const CLAUDE_BASE     = 'https://api.anthropic.com/v1/messages'
 const OPENROUTER_BASE = 'https://openrouter.ai/api/v1'
 
-// Keys are stored in localStorage by ApiKeySetup component
+// Keys are scoped by user ID to prevent cross-user bleed on shared browsers.
+// Call setApiUserId(user.id) after authentication; falls back to unscoped for legacy keys.
+let _userId = ''
+export function setApiUserId(uid: string) { _userId = uid }
+
 function getKey(name: 'sre_claude_key' | 'sre_or_key' | 'sre_fal_key'): string {
-  return typeof window !== 'undefined' ? (localStorage.getItem(name) || '') : ''
+  if (typeof window === 'undefined') return ''
+  const scoped = _userId ? localStorage.getItem(`${name}_${_userId}`) : null
+  return scoped ?? localStorage.getItem(name) ?? ''
+}
+
+export function saveApiKey(name: 'sre_claude_key' | 'sre_or_key' | 'sre_fal_key', value: string) {
+  if (typeof window === 'undefined') return
+  const key = _userId ? `${name}_${_userId}` : name
+  if (value) localStorage.setItem(key, value)
+  else localStorage.removeItem(key)
+}
+
+export function getApiKeys() {
+  return {
+    claude: getKey('sre_claude_key'),
+    openrouter: getKey('sre_or_key'),
+    fal: getKey('sre_fal_key'),
+  }
 }
 
 export type TextModel = 'claude-sonnet' | 'openrouter-free' | 'openrouter-cheap'

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { getApiKeys } from './lib/ai'
 import { DataProvider, useData } from './context/DataContext'
 import { LoginPage } from './components/LoginPage'
 import { Onboarding } from './components/Onboarding'
@@ -42,6 +43,12 @@ function AppShell() {
   const [showKeys, setShowKeys]   = useState(false)
   const [showSetup, setShowSetup] = useState(false)
 
+  // Auto-prompt for API keys on first login to this browser
+  useEffect(() => {
+    const { claude, openrouter } = getApiKeys()
+    if (!claude && !openrouter) setShowKeys(true)
+  }, [])
+
   const handleProfileComplete = async (p: CreatorProfile) => {
     await createProfile(p)
     setShowSetup(false)
@@ -53,6 +60,7 @@ function AppShell() {
     activeProfileId: activeId,
     onProfileSwitch: switchProfile,
     saveCampaign,
+    onOpenKeys: () => setShowKeys(true),
   }
 
   if (loadingProfiles) {

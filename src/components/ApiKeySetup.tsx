@@ -1,31 +1,20 @@
 import { useState } from 'react'
-
-export function useApiKeys() {
-  const [claudeKey, setClaudeKeyState] = useState(() => localStorage.getItem('sre_claude_key') || '')
-  const [openrouterKey, setOpenrouterKeyState] = useState(() => localStorage.getItem('sre_or_key') || '')
-  const [falKey, setFalKeyState] = useState(() => localStorage.getItem('sre_fal_key') || '')
-
-  const saveClaudeKey = (k: string) => { localStorage.setItem('sre_claude_key', k); setClaudeKeyState(k) }
-  const saveOpenrouterKey = (k: string) => { localStorage.setItem('sre_or_key', k); setOpenrouterKeyState(k) }
-  const saveFalKey = (k: string) => { localStorage.setItem('sre_fal_key', k); setFalKeyState(k) }
-
-  return { claudeKey, openrouterKey, falKey, saveClaudeKey, saveOpenrouterKey, saveFalKey }
-}
+import { saveApiKey, getApiKeys } from '../lib/ai'
 
 type Props = {
   onClose: () => void
 }
 
 export function ApiKeySetup({ onClose }: Props) {
-  const { claudeKey, openrouterKey, falKey, saveClaudeKey, saveOpenrouterKey, saveFalKey } = useApiKeys()
-  const [c, setC] = useState(claudeKey)
-  const [o, setO] = useState(openrouterKey)
-  const [f, setF] = useState(falKey)
+  const current = getApiKeys()
+  const [c, setC] = useState(current.claude)
+  const [o, setO] = useState(current.openrouter)
+  const [f, setF] = useState(current.fal)
 
   const save = () => {
-    saveClaudeKey(c)
-    saveOpenrouterKey(o)
-    saveFalKey(f)
+    saveApiKey('sre_claude_key', c.trim())
+    saveApiKey('sre_or_key', o.trim())
+    saveApiKey('sre_fal_key', f.trim())
     onClose()
   }
 
@@ -35,14 +24,14 @@ export function ApiKeySetup({ onClose }: Props) {
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
     }}>
       <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20,
+        background: 'var(--surface)', border: '1px solid var(--border)',
         padding: 40, maxWidth: 520, width: '100%', boxShadow: '0 40px 80px rgba(0,0,0,0.5)'
       }}>
         <div style={{ fontFamily: 'Syne', fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>
           API Keys
         </div>
         <div style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 28, lineHeight: 1.6 }}>
-          Keys are stored locally in your browser. Never sent anywhere except directly to the respective API.
+          Keys are stored locally in your browser, scoped to your account. Never sent anywhere except directly to the respective API.
         </div>
 
         {[
@@ -83,7 +72,7 @@ export function ApiKeySetup({ onClose }: Props) {
           </div>
         ))}
 
-        <div style={{ background: 'var(--surface-2)', borderRadius: 10, padding: 14, marginBottom: 20, fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.6 }}>
+        <div style={{ background: 'var(--surface-2)', padding: 14, marginBottom: 20, fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.6 }}>
           <strong style={{ color: 'var(--green)' }}>Free tier tip:</strong> OpenRouter offers 29 free text models (DeepSeek V3, Llama 3.3 70B) — the app uses these automatically for prompt crafting, hook drafts, and caption variations. Your Claude key is reserved for final scripts and strategy.
         </div>
 
