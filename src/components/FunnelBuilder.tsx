@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { CreatorProfile } from '../App'
 import type { StoredProfile } from '../lib/profiles'
 import type { Campaign } from '../lib/campaigns'
+import { generateText } from '../lib/ai'
 import { InfoTip } from './InfoTip'
 import { ProfileSelector } from './ProfileSelector'
 
@@ -48,19 +49,6 @@ const STAGES: FunnelStage[] = [
 
 type StageContent = { organic: string; paid: string; email_dm: string; offer: string }
 
-async function callClaude(prompt: string): Promise<string> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
-      messages: [{ role: 'user', content: prompt }]
-    })
-  })
-  const data = await res.json()
-  return data.content?.[0]?.text || ''
-}
 
 export function FunnelBuilder({ profile, profiles = [], activeProfileId = '', onProfileSwitch, saveCampaign, onOpenKeys }: Props) {
   const [selected, setSelected] = useState<FunnelStage | null>(null)
@@ -92,7 +80,7 @@ Respond ONLY with valid JSON (no markdown):
 }`
 
     try {
-      const raw = await callClaude(prompt)
+      const raw = await generateText(prompt, 'claude-sonnet')
       const clean = raw.replace(/```json|```/g, '').trim()
       const data = JSON.parse(clean)
       setStageContent(prev => ({ ...prev, [stage.id]: data }))

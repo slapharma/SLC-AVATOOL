@@ -10,22 +10,15 @@
 const CLAUDE_PROXY    = 'https://doncwyumuygrryykanqb.supabase.co/functions/v1/claude-proxy'
 const OPENROUTER_BASE = 'https://openrouter.ai/api/v1'
 
-// Keys are scoped by user ID to prevent cross-user bleed on shared browsers.
-// Call setApiUserId(user.id) after authentication; falls back to unscoped for legacy keys.
-let _userId = ''
-export function setApiUserId(uid: string) { _userId = uid }
-
+// API keys stored in localStorage per browser — users each use their own device.
 function getKey(name: 'sre_claude_key' | 'sre_or_key' | 'sre_fal_key'): string {
-  if (typeof window === 'undefined') return ''
-  const scoped = _userId ? localStorage.getItem(`${name}_${_userId}`) : null
-  return scoped ?? localStorage.getItem(name) ?? ''
+  return typeof window !== 'undefined' ? (localStorage.getItem(name) || '') : ''
 }
 
 export function saveApiKey(name: 'sre_claude_key' | 'sre_or_key' | 'sre_fal_key', value: string) {
   if (typeof window === 'undefined') return
-  const key = _userId ? `${name}_${_userId}` : name
-  if (value) localStorage.setItem(key, value)
-  else localStorage.removeItem(key)
+  if (value) localStorage.setItem(name, value)
+  else localStorage.removeItem(name)
 }
 
 export function getApiKeys() {
@@ -35,6 +28,9 @@ export function getApiKeys() {
     fal: getKey('sre_fal_key'),
   }
 }
+
+// No-op — kept for compatibility if AuthContext still calls it
+export function setApiUserId(_uid: string) {}
 
 export type TextModel = 'claude-sonnet' | 'openrouter-free' | 'openrouter-cheap'
 
