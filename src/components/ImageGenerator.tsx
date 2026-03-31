@@ -3,7 +3,7 @@ import type { CreatorProfile } from '../App'
 import type { StoredProfile } from '../lib/profiles'
 import { generateImage, generateText, IMAGE_MODELS } from '../lib/ai'
 import type { ImageModel } from '../lib/ai'
-import { saveCampaign } from '../lib/campaigns'
+import type { Campaign } from '../lib/campaigns'
 import { InfoTip } from './InfoTip'
 import { ProfileSelector } from './ProfileSelector'
 
@@ -12,6 +12,7 @@ type Props = {
   profiles?: StoredProfile[]
   activeProfileId?: string
   onProfileSwitch?: (id: string) => void
+  saveCampaign?: (c: Omit<Campaign, 'id' | 'createdAt'>) => Promise<Campaign>
 }
 
 type AspectRatio = '1:1' | '9:16' | '16:9' | '4:5'
@@ -46,7 +47,7 @@ const BADGE_TEXT: Record<string, string> = {
   PREMIUM: '#c084fc', FACES: '#fb923c', FAST: '#f43f5e',
 }
 
-export function ImageGenerator({ profile, profiles = [], activeProfileId = '', onProfileSwitch }: Props) {
+export function ImageGenerator({ profile, profiles = [], activeProfileId = '', onProfileSwitch, saveCampaign }: Props) {
   const [model, setModel] = useState<ImageModel>('nano-banana')
   const [contentType, setContentType] = useState('post-cover')
   const [aspect, setAspect] = useState<AspectRatio>('1:1')
@@ -287,7 +288,7 @@ Return ONLY the prompt, nothing else.`
                   <button className="copy-btn" onClick={() => download(generatedImage, 0)}>⬇ Download</button>
                   <button className="copy-btn" onClick={() => {
                     const active = profiles.find(p => p.id === activeProfileId)
-                    saveCampaign({ type: 'image', profileId: activeProfileId, profileName: active?.name || profile.name, niche: profile.niche, title: topic || contentType, output: generatedImage })
+                    await saveCampaign?.({ type: 'image', profileId: activeProfileId, profileName: active?.name || profile.name, niche: profile.niche, title: topic || contentType, output: generatedImage })
                     setImgSaved(true); setTimeout(() => setImgSaved(false), 2000)
                   }}>{imgSaved ? '✓ Saved!' : '⊞ Save'}</button>
                   <button className="copy-btn" onClick={() => { setGeneratedImage(null); setGeneratedPrompt('') }}>↺ Reset</button>

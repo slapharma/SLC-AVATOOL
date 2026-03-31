@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { CreatorProfile } from '../App'
 import type { StoredProfile } from '../lib/profiles'
 import { streamText } from '../lib/ai'
-import { saveCampaign } from '../lib/campaigns'
+import type { Campaign } from '../lib/campaigns'
 import { InfoTip } from './InfoTip'
 import { ProfileSelector } from './ProfileSelector'
 
@@ -11,6 +11,7 @@ type Props = {
   profiles?: StoredProfile[]
   activeProfileId?: string
   onProfileSwitch?: (id: string) => void
+  saveCampaign?: (c: Omit<Campaign, 'id' | 'createdAt'>) => Promise<Campaign>
 }
 
 const STRUCTURES = [
@@ -36,7 +37,7 @@ const HOOK_TYPES = [
 
 const CTA_GOALS = ['Grow followers', 'Drive engagement', 'Generate leads', 'Save/share viral']
 
-export function ScriptGenerator({ profile, profiles = [], activeProfileId = '', onProfileSwitch }: Props) {
+export function ScriptGenerator({ profile, profiles = [], activeProfileId = '', onProfileSwitch, saveCampaign }: Props) {
   const [structure, setStructure]   = useState('tutorial')
   const [pillar, setPillar]         = useState('educate')
   const [hookType, setHookType]     = useState('Curiosity Gap')
@@ -116,9 +117,9 @@ Write an Instagram caption for a ${pillar} post on: "${topic}"
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const saveToC = () => {
+  const saveToC = async () => {
     const active = profiles.find(p => p.id === activeProfileId)
-    saveCampaign({
+    await saveCampaign?.({
       type: mode === 'script' ? 'script' : mode === 'hooks' ? 'hooks' : 'caption',
       profileId: activeProfileId,
       profileName: active?.name || profile.name,

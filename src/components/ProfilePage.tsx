@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import type { CreatorProfile } from '../App'
-import type { StoredProfile } from '../lib/profiles'
-import { makeProfile } from '../lib/profiles'
+import type { CreatorProfile, StoredProfile } from '../App'
 
 type Props = {
   profiles: StoredProfile[]
   activeId: string
-  onSave: (profiles: StoredProfile[], activeId: string) => void
+  onSwitchProfile: (id: string) => void
+  onCreateProfile: (p: CreatorProfile) => Promise<StoredProfile>
+  onUpdateProfile: (id: string, updates: Partial<CreatorProfile>) => Promise<void>
+  onDeleteProfile: (id: string) => Promise<void>
   onBack: () => void
 }
 
@@ -24,7 +25,11 @@ const PRICE_OPTS = [
   { value: 'enterprise', label: 'Enterprise ($25,000+)' },
 ]
 
-export function ProfilePage({ profiles, activeId, onSave, onBack }: Props) {
+export function ProfilePage({
+  profiles, activeId,
+  onSwitchProfile, onCreateProfile, onUpdateProfile, onDeleteProfile,
+  onBack,
+}: Props) {
   const initial = profiles.find(p => p.id === activeId) || profiles[0] || null
   const [editing, setEditing]   = useState<StoredProfile | null>(initial)
   const [creating, setCreating] = useState(false)
@@ -37,34 +42,32 @@ export function ProfilePage({ profiles, activeId, onSave, onBack }: Props) {
   const setNF = (k: keyof CreatorProfile) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setNewForm(f => ({ ...f, [k]: e.target.value }))
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editing) return
-    const updated = profiles.map(p => p.id === editing.id ? editing : p)
-    onSave(updated, activeId)
+    await onUpdateProfile(editing.id, editing)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
 
-  const saveNew = () => {
+  const saveNew = async () => {
     if (!newForm.name || !newForm.niche) return
-    const np = makeProfile(newForm)
-    const updated = [...profiles, np]
-    onSave(updated, np.id)
+    const np = await onCreateProfile(newForm)
     setCreating(false)
     setEditing(np)
     setNewForm({ ...BLANK })
   }
 
-  const deleteProfile = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (profiles.length <= 1) return
-    const updated = profiles.filter(p => p.id !== id)
-    const newActive = id === activeId ? updated[0].id : activeId
-    onSave(updated, newActive)
-    if (editing?.id === id) setEditing(updated.find(p => p.id === newActive) || updated[0])
+    await onDeleteProfile(id)
+    if (editing?.id === id) {
+      const remaining = profiles.filter(p => p.id !== id)
+      setEditing(remaining[0] || null)
+    }
   }
 
   const setActive = (id: string) => {
-    onSave(profiles, id)
+    onSwitchProfile(id)
     const p = profiles.find(pr => pr.id === id)
     if (p) setEditing(p)
   }
@@ -86,7 +89,7 @@ export function ProfilePage({ profiles, activeId, onSave, onBack }: Props) {
       </div>
       <div className="form-group">
         <label className="form-label">Ideal Customer</label>
-        <input className="form-input" value={vals.audience} onChange={onChange('audience')} placeholder="e.g. Pharma founders & biotech CEOs looking for EU licensing partners" />
+        <input className="form-input" value={vals.audience} onChange={onChange('audience')} placeholder="e.g. Pharma founders & biotech CEOs" />
       </div>
       <div className="form-group">
         <label className="form-label">Core Offer</label>
@@ -122,7 +125,6 @@ export function ProfilePage({ profiles, activeId, onSave, onBack }: Props) {
 
   return (
     <div>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
         <button onClick={onBack}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -136,14 +138,14 @@ export function ProfilePage({ profiles, activeId, onSave, onBack }: Props) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 24, alignItems: 'start' }}>
 
-        {/* Profile list sidebar */}
+        {/* Profile list */}
         <div>
           <div className="section-title">Profiles</div>
           {profiles.map(p => (
             <div key={p.id}
               onClick={() => { setEditing(p); setCreating(false) }}
               style={{
-                padding: '10px 14px', marginBottom: 4, cursor: 'pointer', transition: 'all 0.12s',
+                padding: '10px 14px', marginBottom: 4, cursor: 'pointer',
                 background: !creating && editing?.id === p.id ? 'var(--gold-dim)' : 'var(--surface)',
                 border: `1px solid ${!creating && editing?.id === p.id ? 'var(--gold)' : 'var(--border)'}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
@@ -161,7 +163,7 @@ export function ProfilePage({ profiles, activeId, onSave, onBack }: Props) {
               </div>
               {profiles.length > 1 && (
                 <button
-                  onClick={e => { e.stopPropagation(); deleteProfile(p.id) }}
+                  onClick={e => { e.stopPropagation(); handleDelete(p.id) }}
                   style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 13, padding: '2px 4px', flexShrink: 0, lineHeight: 1 }}
                   title="Delete profile"
                 >✕</button>
@@ -178,7 +180,6 @@ export function ProfilePage({ profiles, activeId, onSave, onBack }: Props) {
 
         {/* Edit / Create form */}
         <div className="gen-controls" style={{ height: 'auto' }}>
-
           {creating && (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>

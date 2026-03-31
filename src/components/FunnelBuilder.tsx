@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { CreatorProfile } from '../App'
 import type { StoredProfile } from '../lib/profiles'
-import { saveCampaign } from '../lib/campaigns'
+import type { Campaign } from '../lib/campaigns'
 import { InfoTip } from './InfoTip'
 import { ProfileSelector } from './ProfileSelector'
 
@@ -10,6 +10,7 @@ type Props = {
   profiles?: StoredProfile[]
   activeProfileId?: string
   onProfileSwitch?: (id: string) => void
+  saveCampaign?: (c: Omit<Campaign, 'id' | 'createdAt'>) => Promise<Campaign>
 }
 
 type FunnelStage = {
@@ -60,7 +61,7 @@ async function callClaude(prompt: string): Promise<string> {
   return data.content?.[0]?.text || ''
 }
 
-export function FunnelBuilder({ profile, profiles = [], activeProfileId = '', onProfileSwitch }: Props) {
+export function FunnelBuilder({ profile, profiles = [], activeProfileId = '', onProfileSwitch, saveCampaign }: Props) {
   const [selected, setSelected] = useState<FunnelStage | null>(null)
   const [stageContent, setStageContent] = useState<Record<string, StageContent>>({})
   const [loading, setLoading] = useState(false)
@@ -217,7 +218,7 @@ Respond ONLY with valid JSON (no markdown):
                 </button>
                 <button className="btn-secondary" onClick={() => {
                   const active = profiles.find(p => p.id === activeProfileId)
-                  saveCampaign({ type: 'funnel', profileId: activeProfileId, profileName: active?.name || profile.name, niche: profile.niche, title: `${selected.name} — ${profile.niche}`, output: JSON.stringify(content) })
+                  await saveCampaign?.({ type: 'funnel', profileId: activeProfileId, profileName: active?.name || profile.name, niche: profile.niche, title: `${selected.name} — ${profile.niche}`, output: JSON.stringify(content) })
                 }} style={{ flex: 1, fontSize: 13 }}>
                   ⊞ Save Stage
                 </button>

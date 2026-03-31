@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { AppView, CreatorProfile } from '../App'
+import { useAuth } from '../context/AuthContext'
 
 type Props = {
   view: AppView
@@ -21,6 +22,7 @@ const navItems = [
 
 export function Sidebar({ view, setView, profile, onEditProfile, onKeys }: Props) {
   const [open, setOpen] = useState(false)
+  const { user, isAdmin, signOut } = useAuth()
 
   const navigate = (id: AppView) => {
     setView(id)
@@ -56,6 +58,17 @@ export function Sidebar({ view, setView, profile, onEditProfile, onKeys }: Props
               {item.label}
             </button>
           ))}
+
+          {isAdmin && (
+            <button
+              className={`nav-item ${view === 'admin' ? 'active' : ''}`}
+              onClick={() => navigate('admin' as AppView)}
+              style={{ marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 16 }}
+            >
+              <span className="nav-icon">⚬</span>
+              User Management
+            </button>
+          )}
         </div>
 
         <div className="sidebar-profile">
@@ -73,6 +86,19 @@ export function Sidebar({ view, setView, profile, onEditProfile, onKeys }: Props
               + Setup Profile
             </button>
           )}
+          {/* Signed-in user + sign out */}
+          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 6, wordBreak: 'break-all' }}>
+              {user?.email}
+            </div>
+            <button
+              className="reset-btn"
+              onClick={signOut}
+              style={{ color: 'var(--text-dim)', fontSize: 11 }}
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </nav>
     </>

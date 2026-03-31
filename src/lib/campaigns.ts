@@ -9,6 +9,7 @@ export type Campaign = {
   title: string       // topic / subject used
   output: string      // text, URL, or stringified JSON
   createdAt: number
+  userEmail?: string  // populated in multi-user mode
 }
 
 const KEY = 'sre_campaigns'

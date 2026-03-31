@@ -2,7 +2,7 @@ import { generateText } from '../lib/ai'
 import { useState } from 'react'
 import type { CreatorProfile } from '../App'
 import type { StoredProfile } from '../lib/profiles'
-import { saveCampaign } from '../lib/campaigns'
+import type { Campaign } from '../lib/campaigns'
 import { InfoTip } from './InfoTip'
 import { ProfileSelector } from './ProfileSelector'
 
@@ -11,6 +11,7 @@ type Props = {
   profiles?: StoredProfile[]
   activeProfileId?: string
   onProfileSwitch?: (id: string) => void
+  saveCampaign?: (c: Omit<Campaign, 'id' | 'createdAt'>) => Promise<Campaign>
 }
 
 type Post = { type: string; title: string; hook: string; cta: string }
@@ -22,7 +23,7 @@ const TYPE_COLORS: Record<string, string> = {
   story: 'type-story', proof: 'type-sell', contrarian: 'type-relate'
 }
 
-export function ContentCalendar({ profile, profiles = [], activeProfileId = '', onProfileSwitch }: Props) {
+export function ContentCalendar({ profile, profiles = [], activeProfileId = '', onProfileSwitch, saveCampaign }: Props) {
   const [calendar, setCalendar] = useState<CalendarData | null>(null)
   const [loading, setLoading] = useState(false)
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
@@ -106,7 +107,7 @@ Generate exactly ${postsPerWeek} posts per week. Make titles specific to the nic
         {calendar && (
           <button className="btn-secondary" onClick={() => {
             const active = profiles.find(p => p.id === activeProfileId)
-            saveCampaign({ type: 'calendar', profileId: activeProfileId, profileName: active?.name || profile.name, niche: profile.niche, title: `${postsPerWeek}x/week · ${profile.niche}`, output: JSON.stringify(calendar) })
+            await saveCampaign?.({ type: 'calendar', profileId: activeProfileId, profileName: active?.name || profile.name, niche: profile.niche, title: `${postsPerWeek}x/week · ${profile.niche}`, output: JSON.stringify(calendar) })
             setCalSaved(true); setTimeout(() => setCalSaved(false), 2000)
           }} style={{ padding: '12px 20px' }}>
             {calSaved ? '✓ Saved!' : '⊞ Save Calendar'}

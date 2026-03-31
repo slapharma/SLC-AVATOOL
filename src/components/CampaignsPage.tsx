@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react'
-import { loadCampaigns, deleteCampaign, TYPE_LABELS, TYPE_COLORS } from '../lib/campaigns'
+import { useState } from 'react'
+import { TYPE_LABELS, TYPE_COLORS } from '../lib/campaigns'
 import type { Campaign, CampaignType } from '../lib/campaigns'
 import type { StoredProfile } from '../lib/profiles'
 
 type Props = {
   profiles: StoredProfile[]
+  campaigns: Campaign[]
+  onDeleteCampaign: (id: string) => Promise<void>
 }
 
 type GroupBy = 'profile' | 'type'
@@ -57,8 +59,9 @@ function CampaignCard({ c, onDelete, onView }: { c: Campaign; onDelete: () => vo
             {c.title || '(untitled)'}
           </span>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: preview ? 8 : 0, display: 'flex', gap: 12 }}>
+        <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: preview ? 8 : 0, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <span>{c.profileName} · {c.niche}</span>
+          {c.userEmail && <span style={{ color: 'var(--gold)', opacity: 0.8 }}>{c.userEmail}</span>}
           <span>{timeAgo(c.createdAt)}</span>
         </div>
         {preview && (
@@ -121,24 +124,13 @@ function CampaignModal({ c, onClose }: { c: Campaign; onClose: () => void }) {
   )
 }
 
-export function CampaignsPage({ profiles }: Props) {
-  const [campaigns, setCampaigns] = useState<Campaign[]>(() => loadCampaigns())
-  const [groupBy, setGroupBy]     = useState<GroupBy>('profile')
+export function CampaignsPage({ profiles, campaigns, onDeleteCampaign }: Props) {
+  const [groupBy, setGroupBy]             = useState<GroupBy>('profile')
   const [filterProfile, setFilterProfile] = useState<string>('all')
   const [filterType, setFilterType]       = useState<CampaignType | 'all'>('all')
-  const [viewing, setViewing]     = useState<Campaign | null>(null)
+  const [viewing, setViewing]             = useState<Campaign | null>(null)
 
-  // Refresh from localStorage when tab gains focus
-  useEffect(() => {
-    const refresh = () => setCampaigns(loadCampaigns())
-    window.addEventListener('focus', refresh)
-    return () => window.removeEventListener('focus', refresh)
-  }, [])
-
-  const handleDelete = (id: string) => {
-    deleteCampaign(id)
-    setCampaigns(prev => prev.filter(c => c.id !== id))
-  }
+  const handleDelete = (id: string) => { onDeleteCampaign(id) }
 
   const filtered = campaigns.filter(c => {
     if (filterProfile !== 'all' && c.profileId !== filterProfile) return false

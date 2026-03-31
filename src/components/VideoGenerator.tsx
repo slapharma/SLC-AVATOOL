@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { CreatorProfile } from '../App'
 import type { StoredProfile } from '../lib/profiles'
-import { saveCampaign } from '../lib/campaigns'
+import type { Campaign } from '../lib/campaigns'
 import { InfoTip } from './InfoTip'
 import { ProfileSelector } from './ProfileSelector'
 
@@ -10,6 +10,7 @@ type Props = {
   profiles?: StoredProfile[]
   activeProfileId?: string
   onProfileSwitch?: (id: string) => void
+  saveCampaign?: (c: Omit<Campaign, 'id' | 'createdAt'>) => Promise<Campaign>
 }
 
 type VideoMode = 'text-to-video' | 'image-to-video'
@@ -101,7 +102,7 @@ Return ONLY the prompt. No preamble. Focus on visual description, camera movemen
   return data.choices?.[0]?.message?.content?.trim() || topic
 }
 
-export function VideoGenerator({ profile, profiles = [], activeProfileId = '', onProfileSwitch }: Props) {
+export function VideoGenerator({ profile, profiles = [], activeProfileId = '', onProfileSwitch, saveCampaign }: Props) {
   const [mode, setMode]               = useState<VideoMode>('text-to-video')
   const [contentType, setContentType] = useState('hook')
   const [topic, setTopic]             = useState('')
@@ -405,7 +406,7 @@ export function VideoGenerator({ profile, profiles = [], activeProfileId = '', o
                   <button className="copy-btn" onClick={() => navigator.clipboard.writeText(videoUrl)}>⧉ Copy URL</button>
                   <button className="copy-btn" onClick={() => {
                     const active = profiles.find(p => p.id === activeProfileId)
-                    saveCampaign({ type: 'video', profileId: activeProfileId, profileName: active?.name || profile.name, niche: profile.niche, title: topic || contentType, output: videoUrl })
+                    await saveCampaign?.({ type: 'video', profileId: activeProfileId, profileName: active?.name || profile.name, niche: profile.niche, title: topic || contentType, output: videoUrl })
                     setVidSaved(true); setTimeout(() => setVidSaved(false), 2000)
                   }}>{vidSaved ? '✓ Saved!' : '⊞ Save'}</button>
                   <button className="copy-btn" onClick={() => { setVideoUrl(''); setGeneratedPrompt('') }}>↺ Reset</button>

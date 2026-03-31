@@ -1,4 +1,7 @@
 import { useState } from 'react'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import { DataProvider, useData } from './context/DataContext'
+import { LoginPage } from './components/LoginPage'
 import { Onboarding } from './components/Onboarding'
 import { Dashboard } from './components/Dashboard'
 import { ScriptGenerator } from './components/ScriptGenerator'
@@ -10,8 +13,7 @@ import { Sidebar } from './components/Sidebar'
 import { ApiKeySetup } from './components/ApiKeySetup'
 import { ProfilePage } from './components/ProfilePage'
 import { CampaignsPage } from './components/CampaignsPage'
-import { loadProfiles, saveProfiles, loadActiveId, saveActiveId, makeProfile } from './lib/profiles'
-import type { StoredProfile } from './lib/profiles'
+import { AdminPage } from './components/AdminPage'
 
 export type CreatorProfile = {
   name: string
@@ -24,37 +26,24 @@ export type CreatorProfile = {
   currentFollowers: string
 }
 
-export type { StoredProfile }
-export type AppView = 'dashboard' | 'scripts' | 'calendar' | 'funnel' | 'images' | 'video' | 'profile' | 'campaigns'
+export type StoredProfile = CreatorProfile & { id: string }
+export type AppView = 'dashboard' | 'scripts' | 'calendar' | 'funnel' | 'images' | 'video' | 'profile' | 'campaigns' | 'admin'
 
-function App() {
-  const [profiles, setProfilesRaw] = useState<StoredProfile[]>(() => loadProfiles())
-  const [activeId, setActiveIdRaw] = useState<string>(() => {
-    const id  = loadActiveId()
-    const all = loadProfiles()
-    return all.find(p => p.id === id) ? id : all[0]?.id || ''
-  })
+// Inner shell — rendered only when user is authenticated
+function AppShell() {
+  const { isAdmin } = useAuth()
+  const {
+    profiles, activeId, activeProfile, loadingProfiles,
+    createProfile, updateProfile, deleteProfile, switchProfile,
+    campaigns, saveCampaign, deleteCampaign,
+  } = useData()
+
   const [view, setView]           = useState<AppView>('dashboard')
   const [showKeys, setShowKeys]   = useState(false)
   const [showSetup, setShowSetup] = useState(false)
 
-  const profile: StoredProfile | null = profiles.find(p => p.id === activeId) || profiles[0] || null
-
-  const persistProfiles = (ps: StoredProfile[], aid: string) => {
-    saveProfiles(ps)
-    saveActiveId(aid)
-    setProfilesRaw(ps)
-    setActiveIdRaw(aid)
-  }
-
-  const switchProfile = (id: string) => {
-    saveActiveId(id)
-    setActiveIdRaw(id)
-  }
-
-  const handleProfileComplete = (p: CreatorProfile) => {
-    const sp = makeProfile(p)
-    persistProfiles([...profiles, sp], sp.id)
+  const handleProfileComplete = async (p: CreatorProfile) => {
+    await createProfile(p)
     setShowSetup(false)
     setShowKeys(true)
   }
@@ -63,11 +52,20 @@ function App() {
     profiles,
     activeProfileId: activeId,
     onProfileSwitch: switchProfile,
+    saveCampaign,
+  }
+
+  if (loadingProfiles) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'var(--text-dim)', fontFamily: 'Syne', fontSize: 16 }}>
+        Loading…
+      </div>
+    )
   }
 
   return (
     <div className="app-shell">
-      {/* Onboarding modal overlay */}
+      {/* Onboarding modal */}
       {showSetup && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ position: 'relative' }}>
@@ -86,42 +84,48 @@ function App() {
       <Sidebar
         view={view}
         setView={setView}
-        profile={profile}
+        profile={activeProfile}
         onEditProfile={() => setView('profile')}
         onKeys={() => setShowKeys(true)}
       />
 
       <main className="main-content">
         {view === 'dashboard' && (
-          <Dashboard profile={profile} setView={setView} onSetup={() => setShowSetup(true)} />
+          <Dashboard profile={activeProfile} setView={setView} onSetup={() => setShowSetup(true)} />
         )}
         {view === 'profile' && (
           <ProfilePage
             profiles={profiles}
             activeId={activeId}
-            onSave={persistProfiles}
+            onSwitchProfile={switchProfile}
+            onCreateProfile={createProfile}
+            onUpdateProfile={updateProfile}
+            onDeleteProfile={deleteProfile}
             onBack={() => setView('dashboard')}
           />
         )}
-        {view === 'scripts' && profile && (
-          <ScriptGenerator profile={profile} {...generatorProps} />
+        {view === 'scripts' && activeProfile && (
+          <ScriptGenerator profile={activeProfile} {...generatorProps} />
         )}
-        {view === 'calendar' && profile && (
-          <ContentCalendar profile={profile} {...generatorProps} />
+        {view === 'calendar' && activeProfile && (
+          <ContentCalendar profile={activeProfile} {...generatorProps} />
         )}
-        {view === 'funnel' && profile && (
-          <FunnelBuilder profile={profile} {...generatorProps} />
+        {view === 'funnel' && activeProfile && (
+          <FunnelBuilder profile={activeProfile} {...generatorProps} />
         )}
-        {view === 'images' && profile && (
-          <ImageGenerator profile={profile} {...generatorProps} />
+        {view === 'images' && activeProfile && (
+          <ImageGenerator profile={activeProfile} {...generatorProps} />
         )}
-        {view === 'video' && profile && (
-          <VideoGenerator profile={profile} {...generatorProps} />
+        {view === 'video' && activeProfile && (
+          <VideoGenerator profile={activeProfile} {...generatorProps} />
         )}
         {view === 'campaigns' && (
-          <CampaignsPage profiles={profiles} />
+          <CampaignsPage profiles={profiles} campaigns={campaigns} onDeleteCampaign={deleteCampaign} />
         )}
-        {!profile && view !== 'dashboard' && view !== 'profile' && view !== 'campaigns' && (
+        {view === 'admin' && isAdmin && (
+          <AdminPage />
+        )}
+        {!activeProfile && view !== 'dashboard' && view !== 'profile' && view !== 'campaigns' && view !== 'admin' && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', flexDirection: 'column', gap: 16 }}>
             <div style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>Set up your creator profile first</div>
             <button className="btn-primary" style={{ width: 'auto', padding: '12px 28px' }} onClick={() => setShowSetup(true)}>Get Started</button>
@@ -129,6 +133,35 @@ function App() {
         )}
       </main>
     </div>
+  )
+}
+
+// Auth gate — shows login or the app
+function AuthGate() {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'var(--text-dim)', fontFamily: 'Syne', fontSize: 16 }}>
+        Loading…
+      </div>
+    )
+  }
+
+  if (!user) return <LoginPage />
+
+  return (
+    <DataProvider>
+      <AppShell />
+    </DataProvider>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AuthGate />
+    </AuthProvider>
   )
 }
 
