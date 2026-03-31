@@ -404,7 +404,7 @@ export function VideoGenerator({ profile, profiles = [], activeProfileId = '', o
                 <div className="output-actions">
                   <a href={videoUrl} download="social-video.mp4" className="copy-btn" style={{ textDecoration: 'none' }}>⬇ Download</a>
                   <button className="copy-btn" onClick={() => navigator.clipboard.writeText(videoUrl)}>⧉ Copy URL</button>
-                  <button className="copy-btn" onClick={() => {
+                  <button className="copy-btn" onClick={async () => {
                     const active = profiles.find(p => p.id === activeProfileId)
                     await saveCampaign?.({ type: 'video', profileId: activeProfileId, profileName: active?.name || profile.name, niche: profile.niche, title: topic || contentType, output: videoUrl })
                     setVidSaved(true); setTimeout(() => setVidSaved(false), 2000)

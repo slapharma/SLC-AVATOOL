@@ -216,7 +216,7 @@ Respond ONLY with valid JSON (no markdown):
                   style={{ flex: 1, fontSize: 13 }}>
                   ↺ Regenerate
                 </button>
-                <button className="btn-secondary" onClick={() => {
+                <button className="btn-secondary" onClick={async () => {
                   const active = profiles.find(p => p.id === activeProfileId)
                   await saveCampaign?.({ type: 'funnel', profileId: activeProfileId, profileName: active?.name || profile.name, niche: profile.niche, title: `${selected.name} — ${profile.niche}`, output: JSON.stringify(content) })
                 }} style={{ flex: 1, fontSize: 13 }}>

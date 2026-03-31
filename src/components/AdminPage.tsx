@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { supabase, EDGE_BASE } from '../lib/supabase'
+import { EDGE_BASE } from '../lib/supabase'
 
 type AppUser = {
   id: string

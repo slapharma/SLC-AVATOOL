@@ -286,7 +286,7 @@ Return ONLY the prompt, nothing else.`
 
                 <div className="output-actions">
                   <button className="copy-btn" onClick={() => download(generatedImage, 0)}>⬇ Download</button>
-                  <button className="copy-btn" onClick={() => {
+                  <button className="copy-btn" onClick={async () => {
                     const active = profiles.find(p => p.id === activeProfileId)
                     await saveCampaign?.({ type: 'image', profileId: activeProfileId, profileName: active?.name || profile.name, niche: profile.niche, title: topic || contentType, output: generatedImage })
                     setImgSaved(true); setTimeout(() => setImgSaved(false), 2000)

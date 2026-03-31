@@ -105,7 +105,7 @@ Generate exactly ${postsPerWeek} posts per week. Make titles specific to the nic
           {loading ? 'Building calendar…' : '▦ Generate Month Plan'}
         </button>
         {calendar && (
-          <button className="btn-secondary" onClick={() => {
+          <button className="btn-secondary" onClick={async () => {
             const active = profiles.find(p => p.id === activeProfileId)
             await saveCampaign?.({ type: 'calendar', profileId: activeProfileId, profileName: active?.name || profile.name, niche: profile.niche, title: `${postsPerWeek}x/week · ${profile.niche}`, output: JSON.stringify(calendar) })
             setCalSaved(true); setTimeout(() => setCalSaved(false), 2000)
